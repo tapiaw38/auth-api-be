@@ -105,17 +105,17 @@ func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptio
 	args := []any{}
 
 	if filters.ID != "" {
-		query += ` AND id = $1`
+		query += ` AND u.id = $1`
 		args = append(args, filters.ID)
 	}
 
 	if filters.Username != "" {
-		query += ` AND username = $1`
+		query += ` AND u.username = $1`
 		args = append(args, filters.Username)
 	}
 
 	if filters.Email != "" {
-		query += ` AND email = $1`
+		query += ` AND u.email = $1`
 		args = append(args, filters.Email)
 	}
 

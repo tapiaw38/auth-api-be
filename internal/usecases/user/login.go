@@ -47,7 +47,7 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 
 	var findUser *string
 	if input.SsoType == string(domain.SsoTypeGoogle) {
-		userID, err := googleLogin(ctx, app, input.Code)
+		userID, err := googleLogin(ctx, app, input)
 		if err != nil {
 			return nil, err
 		}
@@ -93,8 +93,8 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 	}, nil
 }
 
-func googleLogin(ctx context.Context, app *appcontext.Context, code string) (*string, error) {
-	token, err := app.Integrations.SSO.ExchangeCode(ctx, code)
+func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, error) {
+	token, err := app.Integrations.SSO.ExchangeCode(ctx, input.Code)
 	if err != nil {
 		return nil, err
 	}
@@ -104,41 +104,69 @@ func googleLogin(ctx context.Context, app *appcontext.Context, code string) (*st
 		return nil, err
 	}
 
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
-	userInsert := domain.User{
-		ID:            id.String(),
-		FirstName:     userInfo.FirstName,
-		LastName:      userInfo.LastName,
-		Username:      utils.RandomString(30),
-		Email:         userInfo.Email,
-		Password:      "",
-		Picture:       utils.ToPointer(userInfo.Picture),
-		IsActive:      true,
-		VerifiedEmail: userInfo.VerifiedEmail,
-		CreatedAt:     time.Now(),
-	}
-
-	userID, err := app.Repositories.User.Create(ctx, userInsert)
-	if err != nil {
-		return nil, err
-	}
-
-	defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
-		Name: string(domain.RoleUser),
+	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+		Email: input.Email,
 	})
-
-	if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
-		UserID: userID,
-		RoleID: defaultRole.ID,
-	}); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	return &userID, nil
+	if user == nil {
+		id, err := uuid.NewUUID()
+		if err != nil {
+			return nil, err
+		}
+
+		userInsert := domain.User{
+			ID:            id.String(),
+			FirstName:     userInfo.FirstName,
+			LastName:      userInfo.LastName,
+			Username:      utils.RandomString(30),
+			Email:         userInfo.Email,
+			Password:      "",
+			Picture:       utils.ToPointer(userInfo.Picture),
+			IsActive:      true,
+			VerifiedEmail: userInfo.VerifiedEmail,
+			CreatedAt:     time.Now(),
+		}
+
+		createdUserID, err := app.Repositories.User.Create(ctx, userInsert)
+		if err != nil {
+			return nil, err
+		}
+
+		defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
+			Name: string(domain.RoleUser),
+		})
+
+		if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
+			UserID: createdUserID,
+			RoleID: defaultRole.ID,
+		}); err != nil {
+			return nil, err
+		}
+
+		return &createdUserID, nil
+	}
+
+	if !user.IsActive {
+		return nil, errors.New("user is not active")
+	}
+
+	if !user.VerifiedEmail {
+		user.VerifiedEmail = userInfo.VerifiedEmail
+	}
+
+	if user.Picture == nil || *user.Picture == "" {
+		user.Picture = utils.ToPointer(userInfo.Picture)
+	}
+
+	updatedUserID, err := app.Repositories.User.Update(ctx, user.ID, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedUserID, nil
 }
 
 func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, error) {

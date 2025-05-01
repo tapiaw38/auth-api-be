@@ -43,9 +43,35 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 		RETURNING id;`
 
 	var (
-		picture, phoneNumber, address, verifiedEmailToken, passwordResetToken *string
-		verifiedEmailTokenExpiry, passwordResetTokenExpiry                    *time.Time
+		verifiedEmailToken                                *string
+		verifiedEmailTokenExpiry                          *time.Time
+		picture, phoneNumber, address, passwordResetToken *string
+		passwordResetTokenExpiry                          *time.Time
 	)
+
+	if user.VerifiedEmailToken != "" {
+		verifiedEmailToken = &user.VerifiedEmailToken
+	}
+
+	if !user.VerifiedEmailTokenExpiry.IsZero() {
+		verifiedEmailTokenExpiry = &user.VerifiedEmailTokenExpiry
+	}
+
+	if user.Picture != nil {
+		picture = user.Picture
+	}
+
+	if user.PhoneNumber != nil {
+		phoneNumber = user.PhoneNumber
+	}
+
+	if user.Address != nil {
+		address = user.Address
+	}
+
+	if user.PasswordResetToken != nil {
+		passwordResetToken = user.PasswordResetToken
+	}
 
 	args := []any{
 		user.FirstName,

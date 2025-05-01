@@ -8,7 +8,7 @@ import (
 )
 
 func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
-	routeGroup := app.Group("/api/v1")
+	routeGroup := app.Group("/")
 
 	routeGroup.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
