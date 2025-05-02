@@ -1,0 +1,40 @@
+services:
+  auth-postgres-db:
+    container_name: "auth-postgres-db"
+    image: postgres:14-alpine
+    ports:
+      - ${DB_PORT}:5432
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    networks:
+      - network-api
+    volumes:
+      - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+  auth-api-be:
+    container_name: "auth-api-be"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - ${PORT}:8082
+    depends_on:
+      - auth-postgres-db
+    stdin_open: true
+    tty: true
+    networks:
+      - network-api
+    env_file:
+      - .env
+
+networks:
+  network-api:
+    driver: bridge
+
+volumes:
+  database_postgres:
+    driver: local

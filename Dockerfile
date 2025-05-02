@@ -1,5 +1,5 @@
 # Stage 1: Build the Go Application
-FROM golang:1.22.6-alpine as builder
+FROM golang:1.24-alpine as builder
 
 # Add Maintainer Info
 LABEL maintainer="tapiaw38 Singh <tapiaw38@gmail.com>"
