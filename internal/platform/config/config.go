@@ -11,10 +11,13 @@ type (
 	GinModeServer string
 
 	ConfigurationService struct {
+		AppName      string
 		ServerConfig ServerConfig
 		DBConfig     DBConfig
 		S3Config     S3Config
 		GCPConfig    GCPConfig
+		RabbitMQ     RabbitMQConfig
+		Notification NotificationConfig
 	}
 
 	ServerConfig struct {
@@ -43,6 +46,21 @@ type (
 
 	GCPConfig struct {
 		OAuth2Config OAuth2Config
+	}
+
+	RabbitMQConfig struct {
+		URL string
+	}
+
+	EmailConfig struct {
+		Host     string
+		Port     string
+		Username string
+		Password string
+	}
+
+	NotificationConfig struct {
+		Email EmailConfig
 	}
 )
 

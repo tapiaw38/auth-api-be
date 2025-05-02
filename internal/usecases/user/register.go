@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	role_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
+	"github.com/tapiaw38/auth-api-be/internal/adapters/queue"
+	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations/notification"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
@@ -76,6 +78,22 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 	createdUser, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		ID: userID,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	emailConfirmation := notification.SendEmailInput{
+		To:           createdUser.Email,
+		From:         app.ConfigService.AppName,
+		Subject:      "Confirmación de registro",
+		TemplateName: "email_verification",
+		Variables: map[string]string{
+			"name": user.FirstName + " " + user.LastName,
+			"link": app.ConfigService.ServerConfig.Host + "/auth/verify-email?token=" + user.VerifiedEmailToken,
+		},
+	}
+
+	err = app.RabbitMQ.Publish(queue.TopicSendEmail, emailConfirmation)
 	if err != nil {
 		return nil, err
 	}

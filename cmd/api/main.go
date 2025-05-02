@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources"
+	"github.com/tapiaw38/auth-api-be/internal/adapters/queue"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
@@ -49,6 +51,17 @@ func run() error {
 		return err
 	}
 
+	mq, err := queue.NewRabbitMQ(&configService)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		if err := mq.Consume(context.Background(), queue.TopicSendEmail); err != nil {
+			log.Printf("RabbitMQ consume error: %v", err)
+		}
+	}()
+
 	if configService.ServerConfig.GinMode == config.DebugMode {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -64,7 +77,7 @@ func run() error {
 	ginConfig.ExposeHeaders = []string{"*"}
 	app.Use(cors.New(ginConfig))
 
-	bootstrap(app, db, &configService)
+	bootstrap(app, db, mq, &configService)
 
 	return app.Run(":" + configService.ServerConfig.Port)
 }
@@ -72,11 +85,13 @@ func run() error {
 func bootstrap(
 	app *gin.Engine,
 	db *sql.DB,
+	mq *queue.RabbitMQ,
 	configService *config.ConfigurationService,
 ) {
 	datasources := datasources.CreateDatasources(db)
 	integrations := integrations.CreateIntegration(configService)
-	contextFactory := appcontext.NewFactory(datasources, integrations, configService)
+	contextFactory := appcontext.NewFactory(datasources, integrations, mq, configService)
+	mq.GetPublishers(integrations)
 	useCases := usecases.CreateUsecases(contextFactory)
 	web.RegisterApplicationRoutes(app, useCases)
 }

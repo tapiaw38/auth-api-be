@@ -24,6 +24,7 @@ func readConfig() (*config.ConfigurationService, error) {
 	}
 
 	configService := &config.ConfigurationService{
+		AppName: getEnv("APP_NAME", ""),
 		ServerConfig: config.ServerConfig{
 			GinMode:   config.GinModeServer(getEnv("GIN_MODE", "release")),
 			Port:      getEnv("PORT", "8080"),
@@ -44,6 +45,17 @@ func readConfig() (*config.ConfigurationService, error) {
 				GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
 				GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 				FrontendURL:        getEnv("FRONTEND_URL", ""),
+			},
+		},
+		RabbitMQ: config.RabbitMQConfig{
+			URL: getEnv("RABBITMQ_URL", ""),
+		},
+		Notification: config.NotificationConfig{
+			Email: config.EmailConfig{
+				Host:     getEnv("EMAIL_HOST", ""),
+				Port:     getEnv("EMAIL_PORT", ""),
+				Username: getEnv("EMAIL_USERNAME", ""),
+				Password: getEnv("EMAIL_PASSWORD", ""),
 			},
 		},
 	}

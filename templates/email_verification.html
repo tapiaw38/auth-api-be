@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Confirmación de correo electrónico</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      p {
+        margin-bottom: 20px;
+      }
+      a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Confirmación de correo electrónico</h1>
+    <p>Estimado/a {{.name}},</p>
+    <p>
+      Gracias por registrarte en nuestro sitio web. Para completar el proceso de
+      registro, debes verificar tu dirección de correo electrónico haciendo clic
+      en el siguiente
+      <a href="{{.link}}">enlace de activacion.</a>
+    </p>
+    <p>Si no has solicitado este registro, ignora este correo electrónico.</p>
+    <p>Saludos.</p>
+  </body>
+</html>
