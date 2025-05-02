@@ -32,7 +32,7 @@ func readConfig() (*config.ConfigurationService, error) {
 			JWTSecret: getEnv("JWT_SECRET", "secret"),
 		},
 		DBConfig: config.DBConfig{
-			DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/cardontour?sslmode=disable"),
+			DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/auth-api-db?sslmode=disable"),
 		},
 		S3Config: config.S3Config{
 			AWSRegion:          getEnv("AWS_REGION", ""),
@@ -54,8 +54,8 @@ func readConfig() (*config.ConfigurationService, error) {
 			Email: config.EmailConfig{
 				Host:     getEnv("EMAIL_HOST", ""),
 				Port:     getEnv("EMAIL_PORT", ""),
-				Username: getEnv("EMAIL_USERNAME", ""),
-				Password: getEnv("EMAIL_PASSWORD", ""),
+				Username: getEnv("EMAIL_HOST_USER", ""),
+				Password: getEnv("EMAIL_HOST_PASSWORD", ""),
 			},
 		},
 	}

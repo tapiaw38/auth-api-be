@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/streadway/amqp"
-	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations/notification"
 	"github.com/tapiaw38/auth-api-be/internal/platform/config"
 )
@@ -94,13 +97,28 @@ func (r *RabbitMQ) Publish(topic Topic, data interface{}) error {
 		return fmt.Errorf("publisher for topic %s not found", topic)
 	}
 
+	q, err := pub.ch.QueueDeclare(
+		string(pub.topic), // Asegúrate de que este nombre coincida con el tema
+		false,             // Durable
+		false,             // Auto-delete
+		false,             // Exclusive
+		false,             // No-wait
+		nil,               // Arguments
+	)
+	if err != nil {
+		return fmt.Errorf("queue declare failed: %w", err)
+	}
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
 	return pub.ch.Publish(
-		"", string(topic), false, false,
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        jsonData,
@@ -117,63 +135,95 @@ func (r *RabbitMQ) Consume(ctx context.Context, topic Topic) error {
 		return fmt.Errorf("publisher for topic %s not found", topic)
 	}
 
+	defer pub.ch.Close()
+
 	q, err := pub.ch.QueueDeclare(
-		string(pub.topic), false, false, false, false, nil,
+		string(pub.topic), // queue name
+		false,             // durable
+		false,             // delete when unused
+		false,             // exclusive
+		false,             // no-wait
+		nil,               // arguments
 	)
 	if err != nil {
 		return fmt.Errorf("queue declare failed: %w", err)
 	}
 
 	msgs, err := pub.ch.Consume(
-		q.Name, "", false, false, false, false, nil,
+		string(pub.topic), // queue name
+		"",                // consumer
+		true,              // auto-ack
+		false,             // exclusive
+		false,             // no-local
+		false,             // no-wait
+		nil,               // args
 	)
 	if err != nil {
 		return fmt.Errorf("consume failed: %w", err)
 	}
 
-	go func() {
-		for {
-			select {
-			case d, ok := <-msgs:
-				if !ok {
-					return
-				}
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							fmt.Printf("Recovered in message handler: %v\n", r)
-						}
-					}()
-					if err := pub.handler(d.Body); err != nil {
-						fmt.Printf("Error handling message: %v\n", err)
-					} else {
-						_ = d.Ack(false)
+	log.Printf("Waiting for messages on queue: %s", q.Name)
+
+	for {
+		select {
+		case d, ok := <-msgs:
+			if !ok {
+				log.Println("Message channel closed")
+				return nil
+			}
+			log.Printf("Received message: %s", string(d.Body))
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("Recovered in message handler: %v", r)
 					}
 				}()
-			case <-ctx.Done():
-				fmt.Println("Consumer context cancelled")
-				return
-			}
-		}
-	}()
 
-	return nil
+				if pub.topic == TopicSendEmail {
+					var sendEmailBody notification.SendEmailInput
+					if err := json.Unmarshal(d.Body, &sendEmailBody); err != nil {
+						log.Printf("Error unmarshaling message: %v", err)
+						return
+					}
+
+					if err := pub.handler(sendEmailBody); err != nil {
+						log.Printf("Error handling message: %v", err)
+					}
+				}
+			}()
+		case <-ctx.Done():
+			log.Println("Consumer context cancelled")
+			return nil
+		}
+	}
 }
 
-func (r *RabbitMQ) GetPublishers(integrations *integrations.Integrations) error {
-	if err := r.GetPublisher(
-		TopicSendEmail,
+func (r *RabbitMQ) StartConsumer(topic Topic, handler ConsumerHandler) error {
+	log.Printf("Starting consumer for topic: %s", topic)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	err := r.GetPublisher(
+		topic,
 		func(data any) error {
-			input, ok := data.(notification.SendEmailInput)
-			if !ok {
-				return fmt.Errorf("invalid data type, expected notification.SendEmailInput")
-			}
-			return integrations.Notification.SendEmail(input)
+			return handler(data)
 		},
-	); err != nil {
-		r.Close()
-		return err
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create publisher for topic %s: %w", topic, err)
 	}
+
+	log.Printf("Publisher for topic %s created successfully", topic)
+
+	if err := r.Consume(ctx, topic); err != nil {
+		return fmt.Errorf("failed to start consumer: %w", err)
+	}
+
+	log.Printf("Consumer for topic %s is running", topic)
+
+	<-ctx.Done()
+	log.Println("Shutting down consumer gracefully...")
 
 	return nil
 }

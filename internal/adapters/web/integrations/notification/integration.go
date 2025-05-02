@@ -17,6 +17,7 @@ type (
 	}
 
 	integration struct {
+		appName  string
 		smtpHost string
 		smtpPort string
 		username string
@@ -34,6 +35,7 @@ type (
 
 func NewIntegration(cfg *config.ConfigurationService) Integration {
 	return &integration{
+		appName:  cfg.AppName,
 		smtpHost: cfg.Notification.Email.Host,
 		smtpPort: cfg.Notification.Email.Port,
 		username: cfg.Notification.Email.Username,
@@ -43,7 +45,7 @@ func NewIntegration(cfg *config.ConfigurationService) Integration {
 
 func (i *integration) SendEmail(input SendEmailInput) error {
 	fromEmail := mail.Address{
-		Name:    "Mi Tour",
+		Name:    i.appName,
 		Address: input.From,
 	}
 	toEmail := mail.Address{
