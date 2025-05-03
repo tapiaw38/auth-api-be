@@ -12,12 +12,13 @@ type Usecases struct {
 }
 
 type User struct {
-	RegisterUsecase user.RegisterUsecase
-	LoginUsecase    user.LoginUsecase
-	GetUsecase      user.GetUsecase
-	UpdateUsecase   user.UpdateUsecase
-	DeleteUsecase   user.DeleteUsecase
-	ListUsecase     user.ListUsecase
+	RegisterUsecase        user.RegisterUsecase
+	LoginUsecase           user.LoginUsecase
+	GetUsecase             user.GetUsecase
+	UpdateUsecase          user.UpdateUsecase
+	DeleteUsecase          user.DeleteUsecase
+	ListUsecase            user.ListUsecase
+	GetTokenVersionUsecase user.GetTokenVersionUsecase
 }
 
 type Role struct {
@@ -28,12 +29,13 @@ type Role struct {
 func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 	return &Usecases{
 		User: User{
-			RegisterUsecase: user.NewCreateUsecase(contextFactory),
-			LoginUsecase:    user.NewLoginUsecase(contextFactory),
-			GetUsecase:      user.NewGetUsecase(contextFactory),
-			UpdateUsecase:   user.NewUpdateUsecase(contextFactory),
-			DeleteUsecase:   user.NewDeleteUsecase(contextFactory),
-			ListUsecase:     user.NewListUsecase(contextFactory),
+			RegisterUsecase:        user.NewCreateUsecase(contextFactory),
+			LoginUsecase:           user.NewLoginUsecase(contextFactory),
+			GetUsecase:             user.NewGetUsecase(contextFactory),
+			UpdateUsecase:          user.NewUpdateUsecase(contextFactory),
+			DeleteUsecase:          user.NewDeleteUsecase(contextFactory),
+			ListUsecase:            user.NewListUsecase(contextFactory),
+			GetTokenVersionUsecase: user.NewGetTokenVersionUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),

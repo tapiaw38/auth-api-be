@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	"github.com/tapiaw38/auth-api-be/internal/platform/config"
 )
 
 type (
@@ -27,7 +28,7 @@ func GenerateToken(user *domain.User, expiration time.Duration) (string, error) 
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte("secret"))
+	tokenString, err := token.SignedString([]byte(config.GetConfigService().ServerConfig.JWTSecret))
 	if err != nil {
 		return "", err
 	}
@@ -35,9 +36,10 @@ func GenerateToken(user *domain.User, expiration time.Duration) (string, error) 
 	return tokenString, nil
 }
 
-func ValidateToken(tokenStr string, secret []byte, getUserTokenVersion func(userID string) (uint, error)) (*CustomClaims, error) {
+func ValidateToken(tokenStr string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return secret, nil
+		secret := config.GetConfigService().ServerConfig.JWTSecret
+		return []byte(secret), nil
 	})
 
 	if err != nil || !token.Valid {
@@ -47,15 +49,6 @@ func ValidateToken(tokenStr string, secret []byte, getUserTokenVersion func(user
 	claims, ok := token.Claims.(*CustomClaims)
 	if !ok {
 		return nil, errors.New("invalid token")
-	}
-
-	dbVersion, err := getUserTokenVersion(claims.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	if dbVersion != claims.TokenVersion {
-		return nil, errors.New("invalid token version")
 	}
 
 	return claims, nil
