@@ -17,11 +17,11 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 		})
 	})
 
-	routeGroup.POST("role/ensure", role.NewEnsureHandler(useCases.Role.EnsureUsecase))
 	routeGroup.POST("auth/register", user.NewRegisterHandler(useCases.User.RegisterUsecase))
 	routeGroup.POST("auth/login", user.NewLoginHandler(useCases.User.LoginUsecase))
+	routeGroup.POST("role/ensure", role.NewEnsureHandler(useCases.Role.EnsureUsecase))
+	routeGroup.GET("role/list", role.NewListHandler(useCases.Role.ListUsecase))
 
 	routeGroup.Use(middlewares.AuthorizationMiddleware(useCases.User.GetTokenVersionUsecase))
-
-	routeGroup.GET("role/list", role.NewListHandler(useCases.Role.ListUsecase))
+	routeGroup.GET("user/me", user.NewMeHandler(useCases.User.GetUsecase))
 }
