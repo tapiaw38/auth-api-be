@@ -19,6 +19,7 @@ type User struct {
 	DeleteUsecase          user.DeleteUsecase
 	ListUsecase            user.ListUsecase
 	GetTokenVersionUsecase user.GetTokenVersionUsecase
+	VerifyEmailUsecase     user.VerifyEmailUsecase
 }
 
 type Role struct {
@@ -36,6 +37,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 			DeleteUsecase:          user.NewDeleteUsecase(contextFactory),
 			ListUsecase:            user.NewListUsecase(contextFactory),
 			GetTokenVersionUsecase: user.NewGetTokenVersionUsecase(contextFactory),
+			VerifyEmailUsecase:     user.NewVerifyEmailUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),

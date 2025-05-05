@@ -19,6 +19,7 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 
 	routeGroup.POST("auth/register", user.NewRegisterHandler(useCases.User.RegisterUsecase))
 	routeGroup.POST("auth/login", user.NewLoginHandler(useCases.User.LoginUsecase))
+	routeGroup.GET("auth/verify-email", user.NewVerifyEmailHandler(useCases.User.VerifyEmailUsecase))
 	routeGroup.POST("role/ensure", role.NewEnsureHandler(useCases.Role.EnsureUsecase))
 
 	routeGroup.Use(middlewares.AuthorizationMiddleware(useCases.User.GetTokenVersionUsecase))

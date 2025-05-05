@@ -22,9 +22,10 @@ type (
 	}
 
 	GetFilterOptions struct {
-		ID       string
-		Username string
-		Email    string
+		ID                 string
+		Username           string
+		Email              string
+		VerifiedEmailToken string
 	}
 
 	ListFilterOptions struct {

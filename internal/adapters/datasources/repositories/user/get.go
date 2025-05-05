@@ -119,6 +119,11 @@ func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptio
 		args = append(args, filters.Email)
 	}
 
+	if filters.VerifiedEmailToken != "" {
+		query += ` AND u.verified_email_token = $1`
+		args = append(args, filters.VerifiedEmailToken)
+	}
+
 	query += ` GROUP BY 
 		u.id, u.first_name, u.last_name, 
 		u.username, u.email, u.password, 
