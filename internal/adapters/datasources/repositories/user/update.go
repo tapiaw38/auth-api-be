@@ -73,6 +73,10 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 		passwordResetToken = user.PasswordResetToken
 	}
 
+	if user.PasswordResetTokenExpiry != nil && !user.PasswordResetTokenExpiry.IsZero() {
+		passwordResetTokenExpiry = user.PasswordResetTokenExpiry
+	}
+
 	args := []any{
 		user.FirstName,
 		user.LastName,

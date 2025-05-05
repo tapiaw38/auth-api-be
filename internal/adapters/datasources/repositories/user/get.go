@@ -124,6 +124,11 @@ func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptio
 		args = append(args, filters.VerifiedEmailToken)
 	}
 
+	if filters.PasswordResetToken != "" {
+		query += ` AND u.password_reset_token = $1`
+		args = append(args, filters.PasswordResetToken)
+	}
+
 	query += ` GROUP BY 
 		u.id, u.first_name, u.last_name, 
 		u.username, u.email, u.password, 

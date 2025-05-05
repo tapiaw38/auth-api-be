@@ -10,6 +10,15 @@ type (
 		Email     string `json:"email"`
 		Password  string `json:"password"`
 	}
+
+	InputRequestResetPassword struct {
+		Email string `json:"email"`
+	}
+
+	InputResetPassword struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
 )
 
 func (i *RegisterInput) toDomain() *domain.User {

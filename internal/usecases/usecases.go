@@ -12,14 +12,16 @@ type Usecases struct {
 }
 
 type User struct {
-	RegisterUsecase        user.RegisterUsecase
-	LoginUsecase           user.LoginUsecase
-	GetUsecase             user.GetUsecase
-	UpdateUsecase          user.UpdateUsecase
-	DeleteUsecase          user.DeleteUsecase
-	ListUsecase            user.ListUsecase
-	GetTokenVersionUsecase user.GetTokenVersionUsecase
-	VerifyEmailUsecase     user.VerifyEmailUsecase
+	RegisterUsecase             user.RegisterUsecase
+	LoginUsecase                user.LoginUsecase
+	GetUsecase                  user.GetUsecase
+	UpdateUsecase               user.UpdateUsecase
+	DeleteUsecase               user.DeleteUsecase
+	ListUsecase                 user.ListUsecase
+	GetTokenVersionUsecase      user.GetTokenVersionUsecase
+	VerifyEmailUsecase          user.VerifyEmailUsecase
+	ResetPasswordUsecase        user.ResetPasswordUsecase
+	RequestResetPasswordUsecase user.RequestResetPasswordUsecase
 }
 
 type Role struct {
@@ -30,14 +32,16 @@ type Role struct {
 func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 	return &Usecases{
 		User: User{
-			RegisterUsecase:        user.NewCreateUsecase(contextFactory),
-			LoginUsecase:           user.NewLoginUsecase(contextFactory),
-			GetUsecase:             user.NewGetUsecase(contextFactory),
-			UpdateUsecase:          user.NewUpdateUsecase(contextFactory),
-			DeleteUsecase:          user.NewDeleteUsecase(contextFactory),
-			ListUsecase:            user.NewListUsecase(contextFactory),
-			GetTokenVersionUsecase: user.NewGetTokenVersionUsecase(contextFactory),
-			VerifyEmailUsecase:     user.NewVerifyEmailUsecase(contextFactory),
+			RegisterUsecase:             user.NewCreateUsecase(contextFactory),
+			LoginUsecase:                user.NewLoginUsecase(contextFactory),
+			GetUsecase:                  user.NewGetUsecase(contextFactory),
+			UpdateUsecase:               user.NewUpdateUsecase(contextFactory),
+			DeleteUsecase:               user.NewDeleteUsecase(contextFactory),
+			ListUsecase:                 user.NewListUsecase(contextFactory),
+			GetTokenVersionUsecase:      user.NewGetTokenVersionUsecase(contextFactory),
+			VerifyEmailUsecase:          user.NewVerifyEmailUsecase(contextFactory),
+			ResetPasswordUsecase:        user.NewResetPasswordUsecase(contextFactory),
+			RequestResetPasswordUsecase: user.NewRequestResetPasswordUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),

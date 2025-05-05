@@ -26,6 +26,7 @@ type (
 		Username           string
 		Email              string
 		VerifiedEmailToken string
+		PasswordResetToken string
 	}
 
 	ListFilterOptions struct {

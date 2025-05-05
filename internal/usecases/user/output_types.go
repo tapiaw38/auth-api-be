@@ -21,6 +21,11 @@ type (
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	}
+
+	ResetPasswordOutputData struct {
+		Email   string `json:"email"`
+		Message string `json:"message"`
+	}
 )
 
 func toUserOutputData(user *domain.User) UserOutputData {
