@@ -54,7 +54,7 @@ clean: welcome ## Remove unused files and golang cache
 	rm -rf bin/
 
 init-docker: welcome ## Initializes a local Docker instance
-	@docker-compose up
+	@docker-compose up -d
 
 init-mockserver: welcome ## Initializes a local Wiremock instance
 	@docker rm mockserver -f
