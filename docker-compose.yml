@@ -15,6 +15,21 @@ services:
       - network-api
     volumes:
       - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+  rabbitmq:
+    container_name: "rabbitmq"
+    image: rabbitmq:3-management-alpine
+    networks:
+      - network-api
+    volumes:
+      - ./rabbit-mq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 15s
+      retries: 5
 
 volumes:
   database_postgres:
