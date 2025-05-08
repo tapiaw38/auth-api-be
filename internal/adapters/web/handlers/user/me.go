@@ -10,7 +10,7 @@ import (
 func NewMeHandler(usecase user.GetUsecase) func(c *gin.Context) {
 	return func(c *gin.Context) {
 
-		username := c.GetString("userID")
+		username := c.Request.Context().Value("userID").(string)
 
 		userOutput, err := usecase.Execute(c, user.GetFilterOptions{
 			Username: username,
