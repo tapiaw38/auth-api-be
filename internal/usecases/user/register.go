@@ -84,7 +84,6 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 
 	emailConfirmation := notification.SendEmailInput{
 		To:           createdUser.Email,
-		From:         app.ConfigService.AppName,
 		Subject:      "Confirmación de registro",
 		TemplateName: "email_verification",
 		Variables: map[string]string{

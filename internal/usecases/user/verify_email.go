@@ -54,7 +54,7 @@ func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string,
 	}
 
 	redirectURL := fmt.Sprintf(
-		"%s/auth/login",
+		"%s/",
 		app.ConfigService.GCPConfig.OAuth2Config.FrontendURL,
 	)
 

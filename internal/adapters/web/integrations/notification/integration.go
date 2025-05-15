@@ -3,6 +3,7 @@ package notification
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"net/mail"
@@ -26,7 +27,6 @@ type (
 
 	SendEmailInput struct {
 		To           string            `json:"to"`
-		From         string            `json:"from"`
 		Subject      string            `json:"subject"`
 		TemplateName string            `json:"template_name"`
 		Variables    map[string]string `json:"variables"`
@@ -44,19 +44,21 @@ func NewIntegration(cfg *config.ConfigurationService) Integration {
 }
 
 func (i *integration) SendEmail(input SendEmailInput) error {
-	fromEmail := mail.Address{
+	from := mail.Address{
 		Name:    i.appName,
-		Address: input.From,
+		Address: i.username,
 	}
-	toEmail := mail.Address{
+	to := mail.Address{
 		Name:    "",
 		Address: input.To,
 	}
 
+	encodedSubject := fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(input.Subject)))
+
 	headers := map[string]string{
-		"From":         fromEmail.String(),
-		"To":           toEmail.String(),
-		"Subject":      input.Subject,
+		"From":         from.String(),
+		"To":           to.String(),
+		"Subject":      encodedSubject,
 		"Content-Type": "text/html; charset=UTF-8",
 	}
 
@@ -64,6 +66,7 @@ func (i *integration) SendEmail(input SendEmailInput) error {
 	for k, v := range headers {
 		message.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
 	}
+	message.WriteString("\r\n")
 
 	tmpl, err := template.ParseFiles("templates/" + input.TemplateName + ".html")
 	if err != nil {
@@ -74,7 +77,7 @@ func (i *integration) SendEmail(input SendEmailInput) error {
 		return err
 	}
 
-	return i.sendSMTPEmail(input.To, input.From, message.String())
+	return i.sendSMTPEmail(input.To, i.username, message.String())
 }
 
 func (i *integration) sendSMTPEmail(toEmail, fromEmail, message string) error {

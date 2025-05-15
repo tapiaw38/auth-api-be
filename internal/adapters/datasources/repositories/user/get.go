@@ -47,6 +47,10 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 		&rolesJSON,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -76,29 +80,28 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 		updatedAt,
 		roles,
 	), nil
-
 }
 
 func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptions) (*sql.Row, error) {
 	query := `SELECT 
-                u.id, u.first_name, u.last_name, u.username, 
-                u.email, u.password, u.phone_number, u.picture, u.address, 
-                u.is_active, u.verified_email, u.verified_email_token,
-                u.verified_email_token_expiry, u.password_reset_token,
-                u.password_reset_token_expiry, u.token_version,
-                u.created_at, u.updated_at,
-                COALESCE(
-                    jsonb_agg(
-                        jsonb_build_object(
-                            'id', r.id,
-                            'name', r.name
-                        )
-                    ), '[]'
-                ) AS roles
-            FROM users u
-            LEFT JOIN user_roles ur ON ur.user_id = u.id
-            LEFT JOIN roles r ON r.id = ur.role_id
-            `
+				u.id, u.first_name, u.last_name, u.username, 
+				u.email, u.password, u.phone_number, u.picture, u.address, 
+				u.is_active, u.verified_email, u.verified_email_token,
+				u.verified_email_token_expiry, u.password_reset_token,
+				u.password_reset_token_expiry, u.token_version,
+				u.created_at, u.updated_at,
+				COALESCE(
+					json_agg(
+						json_build_object(
+							'id', r.id,
+							'name', r.name
+						)
+					) FILTER (WHERE r.id IS NOT NULL), '[]'
+				) AS roles
+			FROM users u
+			LEFT JOIN user_roles ur ON ur.user_id = u.id
+			LEFT JOIN roles r ON r.id = ur.role_id
+			`
 
 	query += ` WHERE 1=1 `
 

@@ -61,7 +61,6 @@ func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string)
 
 	emailResetPassword := notification.SendEmailInput{
 		To:           user.Email,
-		From:         app.ConfigService.AppName,
 		Subject:      "Restablecer contraseña",
 		TemplateName: "reset_password",
 		Variables: map[string]string{

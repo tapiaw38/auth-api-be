@@ -105,7 +105,7 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 	}
 
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
-		Email: input.Email,
+		Email: userInfo.Email,
 	})
 	if err != nil {
 		return nil, err
@@ -138,6 +138,9 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 		defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
 			Name: string(domain.RoleUser),
 		})
+		if err != nil {
+			return nil, err
+		}
 
 		if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
 			UserID: createdUserID,
@@ -152,11 +155,9 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 	if !user.IsActive {
 		return nil, errors.New("user is not active")
 	}
-
 	if !user.VerifiedEmail {
 		user.VerifiedEmail = userInfo.VerifiedEmail
 	}
-
 	if user.Picture == nil || *user.Picture == "" {
 		user.Picture = utils.ToPointer(userInfo.Picture)
 	}
