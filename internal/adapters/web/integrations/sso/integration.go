@@ -41,7 +41,7 @@ func initConfig(cfg *config.ConfigurationService) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     cfg.GCPConfig.OAuth2Config.GoogleClientID,
 		ClientSecret: cfg.GCPConfig.OAuth2Config.GoogleClientSecret,
-		RedirectURL:  cfg.GCPConfig.OAuth2Config.FrontendURL + "/auth",
+		RedirectURL:  cfg.GCPConfig.OAuth2Config.FrontendURL,
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
