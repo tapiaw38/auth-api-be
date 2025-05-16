@@ -117,17 +117,24 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 			return nil, err
 		}
 
+		encodedString, err := utils.GetEncodedString()
+		if err != nil {
+			return nil, err
+		}
+
 		userInsert := domain.User{
-			ID:            id.String(),
-			FirstName:     userInfo.FirstName,
-			LastName:      userInfo.LastName,
-			Username:      utils.RandomString(30),
-			Email:         userInfo.Email,
-			Password:      "",
-			Picture:       utils.ToPointer(userInfo.Picture),
-			IsActive:      true,
-			VerifiedEmail: userInfo.VerifiedEmail,
-			CreatedAt:     time.Now(),
+			ID:                       id.String(),
+			FirstName:                userInfo.FirstName,
+			LastName:                 userInfo.LastName,
+			Username:                 utils.RandomString(30),
+			Email:                    userInfo.Email,
+			Password:                 "",
+			Picture:                  utils.ToPointer(userInfo.Picture),
+			IsActive:                 true,
+			VerifiedEmail:            userInfo.VerifiedEmail,
+			VerifiedEmailToken:       encodedString,
+			VerifiedEmailTokenExpiry: time.Now().Add(time.Hour * 24 * 7),
+			CreatedAt:                time.Now(),
 		}
 
 		createdUserID, err := app.Repositories.User.Create(ctx, userInsert)
