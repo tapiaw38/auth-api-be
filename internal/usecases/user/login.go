@@ -82,6 +82,10 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 		return nil, err
 	}
 
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
 	token, err := auth.GenerateToken(user, time.Hour*24*7)
 	if err != nil {
 		return nil, err
