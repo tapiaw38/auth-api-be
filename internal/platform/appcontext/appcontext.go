@@ -11,7 +11,7 @@ import (
 type Context struct {
 	Repositories  *repositories.Repositories
 	Integrations  *integrations.Integrations
-	RabbitMQ      *queue.RabbitMQ
+	Publisher     queue.Publisher
 	ConfigService *config.ConfigurationService
 }
 
@@ -22,14 +22,14 @@ type Factory func(opts ...Option) *Context
 func NewFactory(
 	datasources *datasources.Datasources,
 	integrations *integrations.Integrations,
-	rabbitMQ *queue.RabbitMQ,
+	publisher queue.Publisher,
 	configService *config.ConfigurationService,
 ) func(opts ...Option) *Context {
 	return func(opts ...Option) *Context {
 		return &Context{
 			Repositories:  repositories.NewFactory(datasources, configService)(),
 			Integrations:  integrations,
-			RabbitMQ:      rabbitMQ,
+			Publisher:     publisher,
 			ConfigService: configService,
 		}
 	}

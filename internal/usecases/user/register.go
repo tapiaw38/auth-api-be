@@ -92,7 +92,7 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 		},
 	}
 
-	if err = app.RabbitMQ.Publish(queue.TopicSendEmail, emailConfirmation); err != nil {
+	if err = app.Publisher.Publish(queue.TopicSendEmail, emailConfirmation); err != nil {
 		return nil, err
 	}
 

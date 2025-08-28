@@ -69,7 +69,7 @@ func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string)
 		},
 	}
 
-	if err = app.RabbitMQ.Publish(queue.TopicSendEmail, emailResetPassword); err != nil {
+	if err = app.Publisher.Publish(queue.TopicSendEmail, emailResetPassword); err != nil {
 		return nil, err
 	}
 
