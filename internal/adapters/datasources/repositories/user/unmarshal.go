@@ -57,7 +57,7 @@ func unmarshalRoles(raw json.RawMessage) ([]domain.Role, error) {
 		return nil, err
 	}
 
-	var roles []domain.Role
+	roles := make([]domain.Role, 0, len(rolesJSON))
 	for _, roleJSON := range rolesJSON {
 		roles = append(roles, domain.Role{
 			ID:   roleJSON.ID,

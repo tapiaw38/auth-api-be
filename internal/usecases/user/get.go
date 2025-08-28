@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
@@ -35,6 +36,10 @@ func (u *getUsecase) Execute(ctx context.Context, filters GetFilterOptions) (*Ge
 	user, err := app.Repositories.User.Get(ctx, user.GetFilterOptions(filters))
 	if err != nil {
 		return nil, err
+	}
+
+	if user == nil {
+		return nil, errors.New("user not found")
 	}
 
 	return &GetOutput{

@@ -12,5 +12,5 @@ until nc -z "${RABBIT_HOST:-rabbitmq}" "${RABBIT_PORT:-5672}"; do
 done
 echo "RabbitMQ is ready."
 
-echo "🚀 Starting Go application..."
+echo "Starting Go application..."
 exec go run ./cmd/api/ --host 0.0.0.0 --port 8082

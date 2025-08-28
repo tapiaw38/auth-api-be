@@ -17,4 +17,4 @@ else
 EOSQL
 fi
 
-echo "Database initialization finished successfully!"
+echo "Database initialization finished successfully"
