@@ -163,7 +163,6 @@ func TestMeHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedStatusCode, w.Code)
 
 			if tc.expectedErr != nil {
-				// Verificar que el error esté en el body de la respuesta
 				assert.Contains(t, w.Body.String(), tc.expectedErr.Error())
 			}
 		})
