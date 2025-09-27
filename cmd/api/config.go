@@ -58,6 +58,9 @@ func readConfig() (*config.ConfigurationService, error) {
 				Password: getEnv("EMAIL_HOST_PASSWORD", ""),
 			},
 		},
+		InitConfig: config.InitConfig{
+			EnsureDefaultRoles: getEnv("ENSURE_DEFAULT_ROLES", "true") == "true",
+		},
 	}
 
 	return configService, nil
