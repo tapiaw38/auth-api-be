@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+	"errors"
 
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
@@ -35,6 +36,10 @@ func (u *getUsecase) Execute(ctx context.Context, filters GetFilterOptions) (*Ge
 	role, err := app.Repositories.Role.Get(ctx, role.GetFilterOptions(filters))
 	if err != nil {
 		return nil, err
+	}
+
+	if role == nil {
+		return nil, errors.New("role not found")
 	}
 
 	return &GetOutput{
