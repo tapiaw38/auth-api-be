@@ -37,6 +37,10 @@ func (u *listUsecase) Execute(ctx context.Context, filters ListFilterOptions) ([
 		return nil, err
 	}
 
+	if roles == nil {
+		return nil, nil
+	}
+
 	outputRoles := make([]RoleOutputData, 0, len(roles))
 	for _, role := range roles {
 		outputRoles = append(outputRoles, toRoleOutputData(role))
