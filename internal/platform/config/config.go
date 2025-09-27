@@ -18,6 +18,7 @@ type (
 		GCPConfig    GCPConfig
 		RabbitMQ     RabbitMQConfig
 		Notification NotificationConfig
+		InitConfig   InitConfig
 	}
 
 	ServerConfig struct {
@@ -61,6 +62,10 @@ type (
 
 	NotificationConfig struct {
 		Email EmailConfig
+	}
+	
+	InitConfig struct {
+		EnsureDefaultRoles bool
 	}
 )
 

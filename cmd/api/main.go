@@ -16,6 +16,7 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/platform/config"
 	"github.com/tapiaw38/auth-api-be/internal/platform/database"
 	"github.com/tapiaw38/auth-api-be/internal/usecases"
+	"github.com/tapiaw38/auth-api-be/internal/usecases/role"
 )
 
 func main() {
@@ -90,6 +91,16 @@ func bootstrap(
 
 	contextFactory := appcontext.NewFactory(datasources, integrations, mq, configService)
 	useCases := usecases.CreateUsecases(contextFactory)
+
+	if !configService.InitConfig.EnsureDefaultRoles {
+		log.Println("Skipping default roles initialization")
+	}
+
+	if err := ensureDefaultRoles(context.Background(), useCases.Role.EnsureUsecase); err != nil {
+		log.Printf("Failed to ensure default roles: %v", err)
+		return err
+	}
+
 	web.RegisterApplicationRoutes(app, useCases)
 
 	if err := workers.RegisterWorkers(context.Background(), mq, contextFactory); err != nil {
@@ -97,5 +108,16 @@ func bootstrap(
 		return err
 	}
 
+	return nil
+}
+
+func ensureDefaultRoles(ctx context.Context, ensureUsecase role.EnsureUseCase) error {
+	log.Println("Ensuring default roles exist...")
+	err := ensureUsecase.Execute(ctx)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Default roles ensured successfully")
 	return nil
 }
