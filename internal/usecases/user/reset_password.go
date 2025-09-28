@@ -66,6 +66,10 @@ func (u *resetPasswordUsecase) Execute(ctx context.Context, token, password stri
 		return nil, err
 	}
 
+	if err := app.Repositories.User.InvalidatePasswordResetToken(ctx, user.ID); err != nil {
+		return nil, err
+	}
+
 	return &ResetPasswordOutput{
 		Data: ResetPasswordOutputData{
 			Email:   user.Email,

@@ -22,6 +22,7 @@ type User struct {
 	VerifyEmailUsecase          user.VerifyEmailUsecase
 	ResetPasswordUsecase        user.ResetPasswordUsecase
 	RequestResetPasswordUsecase user.RequestResetPasswordUsecase
+	ChangePasswordUsecase       user.ChangePasswordUsecase
 }
 
 type Role struct {
@@ -42,6 +43,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 			VerifyEmailUsecase:          user.NewVerifyEmailUsecase(contextFactory),
 			ResetPasswordUsecase:        user.NewResetPasswordUsecase(contextFactory),
 			RequestResetPasswordUsecase: user.NewRequestResetPasswordUsecase(contextFactory),
+			ChangePasswordUsecase:       user.NewChangePasswordUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),

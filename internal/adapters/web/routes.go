@@ -26,5 +26,6 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 
 	routeGroup.Use(middlewares.AuthorizationMiddleware(useCases.User.GetTokenVersionUsecase))
 	routeGroup.GET("user/me", user.NewMeHandler(useCases.User.GetUsecase))
+	routeGroup.PUT("user/me/password", user.NewChangePasswordHandler(useCases.User.ChangePasswordUsecase))
 	routeGroup.GET("role/list", role.NewListHandler(useCases.Role.ListUsecase))
 }
