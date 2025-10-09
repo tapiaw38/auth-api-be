@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
@@ -38,7 +39,7 @@ func (e *ensureUseCase) Execute(ctx context.Context) error {
 		existingRole, err := app.Repositories.Role.Get(
 			ctx, role.GetFilterOptions{Name: string(roleName)},
 		)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			return err
 		}
 
