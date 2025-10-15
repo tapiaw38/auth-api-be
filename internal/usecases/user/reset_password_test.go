@@ -35,7 +35,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 	}{
 		"successful password reset": {
 			token:    "valid-token",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				user := &domain.User{
 					ID:                       "user-123",
@@ -52,7 +52,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		},
 		"invalid token - user not found": {
 			token:    "invalid-token",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "invalid-token"}).Return(nil, errors.New("user not found"))
 			},
@@ -60,7 +60,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		},
 		"invalid token - nil user": {
 			token:    "invalid-token2",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "invalid-token2"}).Return(nil, nil)
 			},
@@ -68,7 +68,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		},
 		"expired token": {
 			token:    "expired-token",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				user := &domain.User{
 					ID:                       "user-123",
@@ -81,7 +81,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		},
 		"password update failure": {
 			token:    "valid-token-update-fail",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				user := &domain.User{
 					ID:                       "user-123",
@@ -97,7 +97,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		},
 		"token invalidation failure": {
 			token:    "valid-token-invalidate-fail",
-			password: "newpassword",
+			password: "NewPassword123!",
 			prepare: func(f *fields) {
 				user := &domain.User{
 					ID:                       "user-123",

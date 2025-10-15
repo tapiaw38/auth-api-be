@@ -51,6 +51,10 @@ func (u *resetPasswordUsecase) Execute(ctx context.Context, token, password stri
 		return nil, errors.New("token expired or invalid")
 	}
 
+	if err := auth.ValidatePasswordStrength(password); err != nil {
+		return nil, err
+	}
+
 	hashedPassword, err := auth.HashedPassword(password)
 	if err != nil {
 		return nil, err

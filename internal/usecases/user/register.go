@@ -44,6 +44,10 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 		return nil, err
 	}
 
+	if err := auth.ValidatePasswordStrength(user.Password); err != nil {
+		return nil, err
+	}
+
 	hashedPassword, err := auth.HashedPassword(user.Password)
 	if err != nil {
 		return nil, err

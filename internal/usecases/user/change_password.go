@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"errors"
 
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
@@ -41,8 +42,20 @@ func (u *changePasswordUsecase) Execute(ctx context.Context, input ChangePasswor
 		return err
 	}
 
+	if user == nil {
+		return errors.New("user not found")
+	}
+
 	if err := auth.ComparePassword(input.OldPassword, user.Password);
 	err != nil {
+		return err
+	}
+
+	if input.OldPassword == input.NewPassword {
+		return errors.New("new password must be different from current password")
+	}
+
+	if err := auth.ValidatePasswordStrength(input.NewPassword); err != nil {
 		return err
 	}
 
