@@ -25,15 +25,16 @@ func TestChangePasswordUsecase(t *testing.T) {
 
 	tests := map[string]struct {
 		input       usecase.ChangePasswordInput
+		username    string
 		prepare     func(f *fields)
 		expectedErr error
 	}{
 		"successful password change": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "NewPassword123!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -45,18 +46,16 @@ func TestChangePasswordUsecase(t *testing.T) {
 			expectedErr: nil,
 		},
 		"user not found - error from repository": {
-			input: usecase.ChangePasswordInput{
-				Username: "non-existent-user",
-			},
+			input:    usecase.ChangePasswordInput{},
+			username: "non-existent-user",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "non-existent-user"}).Return(nil, errors.New("not found"))
 			},
 			expectedErr: errors.New("not found"),
 		},
 		"user not found - nil user": {
-			input: usecase.ChangePasswordInput{
-				Username: "non-existent-user",
-			},
+			input:    usecase.ChangePasswordInput{},
+			username: "non-existent-user",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "non-existent-user"}).Return(nil, nil)
 			},
@@ -64,10 +63,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"incorrect old password": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "wrongpassword",
 				NewPassword: "NewPassword123!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -79,10 +78,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password same as old password": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "oldpassword",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -94,10 +93,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password too short": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "Pass1!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -109,10 +108,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password missing uppercase": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "password123!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -124,10 +123,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password missing lowercase": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "PASSWORD123!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -139,10 +138,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password missing number": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "Password!",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -154,10 +153,10 @@ func TestChangePasswordUsecase(t *testing.T) {
 		},
 		"new password missing special character": {
 			input: usecase.ChangePasswordInput{
-				Username:    "testuser",
 				OldPassword: "oldpassword",
 				NewPassword: "Password123",
 			},
+			username: "testuser",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "testuser"}).Return(&domain.User{
 					ID:       "user-123",
@@ -191,7 +190,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 			}
 
 			uc := usecase.NewChangePasswordUsecase(contextFactory)
-			actualErr := uc.Execute(context.Background(), tc.input)
+			actualErr := uc.Execute(context.Background(), tc.input, tc.username)
 
 			assert.Equal(t, tc.expectedErr, actualErr)
 		})

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ import (
 
 type (
 	RegisterUsecase interface {
-		Execute(context.Context, *domain.User) (*RegisterOutput, error)
+		Execute(context.Context, RegisterInput) (*RegisterOutput, error)
 	}
 
 	registerUsecase struct {
@@ -28,6 +29,13 @@ type (
 		Data  UserOutputData `json:"data"`
 		Token string         `json:"token"`
 	}
+
+	RegisterInput struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
+	}
 )
 
 func NewCreateUsecase(contextFactory appcontext.Factory) RegisterUsecase {
@@ -36,10 +44,46 @@ func NewCreateUsecase(contextFactory appcontext.Factory) RegisterUsecase {
 	}
 }
 
-func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*RegisterOutput, error) {
+func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*RegisterOutput, error) {
 	app := u.contextFactory()
 
-	err := AddVerifiedEmailToken(user)
+	// Validate first name and last name
+	if input.FirstName == "" {
+		return nil, errors.New("first name is required")
+	}
+	if input.LastName == "" {
+		return nil, errors.New("last name is required")
+	}
+
+	// Validate email format
+	if err := auth.ValidateEmail(input.Email); err != nil {
+		return nil, err
+	}
+
+	// Generate username automatically from first name, last name and random string
+	generatedUsername := auth.GenerateUsername(input.FirstName, input.LastName)
+
+	user := domain.User{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Username:  generatedUsername,
+		Email:     input.Email,
+		Password:  input.Password,
+	}
+
+	// Check if email already exists
+	existingUser, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+		Email: user.Email,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if existingUser != nil {
+		return nil, errors.New("email already in use")
+	}
+
+	err = AddVerifiedEmailToken(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +108,7 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 	user.VerifiedEmail = false
 	user.AuthMethod = string(domain.AuthMethodPassword)
 
-	userID, err := app.Repositories.User.Create(ctx, *user)
+	userID, err := app.Repositories.User.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +116,9 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 	defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
 		Name: string(domain.RoleUser),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
 		UserID: userID,

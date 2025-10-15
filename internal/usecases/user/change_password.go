@@ -1,4 +1,3 @@
-
 package user
 
 import (
@@ -12,7 +11,7 @@ import (
 
 type (
 	ChangePasswordUsecase interface {
-		Execute(context.Context, ChangePasswordInput) error
+		Execute(context.Context, ChangePasswordInput, string) error
 	}
 
 	changePasswordUsecase struct {
@@ -20,9 +19,8 @@ type (
 	}
 
 	ChangePasswordInput struct {
-		Username    string
-		OldPassword string
-		NewPassword string
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
 	}
 )
 
@@ -32,11 +30,11 @@ func NewChangePasswordUsecase(contextFactory appcontext.Factory) ChangePasswordU
 	}
 }
 
-func (u *changePasswordUsecase) Execute(ctx context.Context, input ChangePasswordInput) error {
+func (u *changePasswordUsecase) Execute(ctx context.Context, input ChangePasswordInput, username string) error {
 	app := u.contextFactory()
 
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
-		Username: input.Username,
+		Username: username,
 	})
 	if err != nil {
 		return err
@@ -46,8 +44,7 @@ func (u *changePasswordUsecase) Execute(ctx context.Context, input ChangePasswor
 		return errors.New("user not found")
 	}
 
-	if err := auth.ComparePassword(input.OldPassword, user.Password);
-	err != nil {
+	if err := auth.ComparePassword(input.OldPassword, user.Password); err != nil {
 		return err
 	}
 

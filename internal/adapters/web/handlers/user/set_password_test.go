@@ -1,4 +1,3 @@
-
 package user_test
 
 import (
@@ -13,14 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
-	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	mock_usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user/mocks"
 	"go.uber.org/mock/gomock"
 )
 
-func TestChangePasswordHandler(t *testing.T) {
+func TestSetPasswordHandler(t *testing.T) {
 	type fields struct {
-		usecase *mock_usecase.MockChangePasswordUsecase
+		usecase *mock_usecase.MockSetPasswordUsecase
 	}
 
 	tests := map[string]struct {
@@ -29,26 +27,44 @@ func TestChangePasswordHandler(t *testing.T) {
 		expectedStatusCode int
 		expectedErr        error
 	}{
-		"when password changed successfully": {
-			body: usecase.ChangePasswordInput{
-				OldPassword: "old_password",
-				NewPassword: "new_password",
+		"when password set successfully": {
+			body: user.SetPasswordRequest{
+				NewPassword: "NewPassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any(), "user-123").Return(nil)
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil)
 			},
 			expectedStatusCode: http.StatusNoContent,
 		},
 		"when usecase returns an error": {
-			body: usecase.ChangePasswordInput{
-				OldPassword: "old_password",
-				NewPassword: "new_password",
+			body: user.SetPasswordRequest{
+				NewPassword: "NewPassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any(), "user-123").Return(errors.New("some error"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("some error"))
 			},
 			expectedStatusCode: http.StatusInternalServerError,
 			expectedErr:        errors.New("some error"),
+		},
+		"when user is not SSO user": {
+			body: user.SetPasswordRequest{
+				NewPassword: "NewPassword123!",
+			},
+			prepare: func(f *fields) {
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("only SSO users can set initial password"))
+			},
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErr:        errors.New("only SSO users can set initial password"),
+		},
+		"when password is too weak": {
+			body: user.SetPasswordRequest{
+				NewPassword: "weak",
+			},
+			prepare: func(f *fields) {
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("password must be at least 8 characters long"))
+			},
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErr:        errors.New("password must be at least 8 characters long"),
 		},
 		"when request body is invalid": {
 			body:               "invalid body",
@@ -63,7 +79,7 @@ func TestChangePasswordHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			f := fields{
-				usecase: mock_usecase.NewMockChangePasswordUsecase(ctrl),
+				usecase: mock_usecase.NewMockSetPasswordUsecase(ctrl),
 			}
 
 			if tc.prepare != nil {
@@ -75,10 +91,10 @@ func TestChangePasswordHandler(t *testing.T) {
 			c, _ := gin.CreateTestContext(w)
 
 			bodyBytes, _ := json.Marshal(tc.body)
-			c.Request = httptest.NewRequest(http.MethodPut, "/user/me/password", bytes.NewReader(bodyBytes))
+			c.Request = httptest.NewRequest(http.MethodPost, "/user/me/set-password", bytes.NewReader(bodyBytes))
 			c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "userID", "user-123"))
 
-			handler := user.NewChangePasswordHandler(f.usecase)
+			handler := user.NewSetPasswordHandler(f.usecase)
 			handler(c)
 
 			assert.Equal(t, tc.expectedStatusCode, w.Code)

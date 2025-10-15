@@ -136,7 +136,10 @@ func TestResetPasswordUsecase(t *testing.T) {
 			}
 
 			uc := usecase.NewResetPasswordUsecase(contextFactory)
-			_, actualErr := uc.Execute(context.Background(), tc.token, tc.password)
+			_, actualErr := uc.Execute(context.Background(), usecase.ResetPasswordInput{
+				Token:    tc.token,
+				Password: tc.password,
+			})
 
 			assert.Equal(t, tc.expectedErr, actualErr)
 		})
