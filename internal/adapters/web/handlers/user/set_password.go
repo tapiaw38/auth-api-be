@@ -20,10 +20,10 @@ func NewSetPasswordHandler(usecase user.SetPasswordUsecase) func(c *gin.Context)
 			return
 		}
 
-		userID := c.Request.Context().Value("userID").(string)
+		username := c.Request.Context().Value("userID").(string)
 
 		input := user.SetPasswordInput{
-			UserID:      userID,
+			Username:    username,
 			NewPassword: request.NewPassword,
 		}
 

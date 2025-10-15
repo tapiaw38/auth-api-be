@@ -20,7 +20,7 @@ type (
 	}
 
 	SetPasswordInput struct {
-		UserID      string
+		Username    string
 		NewPassword string
 	}
 )
@@ -35,7 +35,7 @@ func (u *setPasswordUsecase) Execute(ctx context.Context, input SetPasswordInput
 	app := u.contextFactory()
 
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
-		ID: input.UserID,
+		Username: input.Username,
 	})
 	if err != nil {
 		return err

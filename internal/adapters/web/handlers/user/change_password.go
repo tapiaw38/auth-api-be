@@ -22,10 +22,10 @@ func NewChangePasswordHandler(usecase user.ChangePasswordUsecase) func(c *gin.Co
 			return
 		}
 
-		userID := c.Request.Context().Value("userID").(string)
+		username := c.Request.Context().Value("userID").(string)
 
 		input := user.ChangePasswordInput{
-			ID:          userID,
+			Username:    username,
 			OldPassword: request.OldPassword,
 			NewPassword: request.NewPassword,
 		}
