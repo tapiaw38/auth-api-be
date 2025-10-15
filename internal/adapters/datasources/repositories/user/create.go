@@ -25,12 +25,12 @@ func (r *repository) Create(ctx context.Context, user domain.User) (string, erro
 
 func (r *repository) executeCreateQuery(ctx context.Context, user domain.User) (*sql.Row, error) {
 	query := `INSERT INTO users (
-				id, first_name, last_name, username, email, 
+				id, first_name, last_name, username, email,
 				password, phone_number, picture, address,
 				is_active, verified_email,
 				verified_email_token, verified_email_token_expiry,
-				created_at, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+				auth_method, created_at, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 			RETURNING id`
 
 	var phoneNumber, picture, address *string
@@ -49,6 +49,7 @@ func (r *repository) executeCreateQuery(ctx context.Context, user domain.User) (
 		user.VerifiedEmail,
 		user.VerifiedEmailToken,
 		user.VerifiedEmailTokenExpiry,
+		user.AuthMethod,
 		time.Now().UTC(),
 		time.Now().UTC(),
 	}

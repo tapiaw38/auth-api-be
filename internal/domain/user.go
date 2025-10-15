@@ -8,8 +8,15 @@ const (
 	SsoTypeGoogle SsoType = "google"
 )
 
+const (
+	AuthMethodPassword AuthMethod = "password"
+	AuthMethodGoogle   AuthMethod = "google"
+	AuthMethodHybrid   AuthMethod = "hybrid"
+)
+
 type (
-	SsoType string
+	SsoType    string
+	AuthMethod string
 
 	User struct {
 		ID                       string
@@ -28,6 +35,7 @@ type (
 		PasswordResetToken       *string
 		PasswordResetTokenExpiry *time.Time
 		TokenVersion             uint
+		AuthMethod               string
 		Roles                    []Role
 		CreatedAt                time.Time
 		UpdatedAt                time.Time

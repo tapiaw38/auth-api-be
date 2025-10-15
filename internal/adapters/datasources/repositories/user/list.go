@@ -21,7 +21,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 	var users []*domain.User
 	for rows.Next() {
 		var (
-			id, firstName, lastName, username, email, password, verifiedEmailToken string
+			id, firstName, lastName, username, email, password, verifiedEmailToken, authMethod string
 		)
 		var phoneNumber, picture, address, passwordResetToken *string
 		var isActive, verifiedEmail bool
@@ -47,6 +47,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 			&passwordResetToken,
 			&passwordResetTokenExpiry,
 			&tokenVersion,
+			&authMethod,
 			&createdAt,
 			&updatedAt,
 			&rolesJSON,
@@ -77,6 +78,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 			passwordResetToken,
 			passwordResetTokenExpiry,
 			tokenVersion,
+			authMethod,
 			createdAt,
 			updatedAt,
 			roles,
@@ -87,12 +89,12 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 }
 
 func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOptions) (*sql.Rows, error) {
-	query := `SELECT 
-                u.id, u.first_name, u.last_name, u.username, 
-                u.email, u.password, u.phone_number, u.picture, u.address, 
+	query := `SELECT
+                u.id, u.first_name, u.last_name, u.username,
+                u.email, u.password, u.phone_number, u.picture, u.address,
                 u.is_active, u.verified_email, u.verified_email_token,
                 u.verified_email_token_expiry, u.password_reset_token,
-                u.password_reset_token_expiry, u.token_version,
+                u.password_reset_token_expiry, u.token_version, u.auth_method,
                 u.created_at, u.updated_at,
                 COALESCE(
                     jsonb_agg(

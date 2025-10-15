@@ -138,6 +138,7 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 			VerifiedEmail:            userInfo.VerifiedEmail,
 			VerifiedEmailToken:       encodedString,
 			VerifiedEmailTokenExpiry: time.Now().Add(time.Hour * 24 * 7),
+			AuthMethod:               string(domain.AuthMethodGoogle),
 			CreatedAt:                time.Now(),
 		}
 
@@ -191,6 +192,14 @@ func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input L
 
 	if !user.IsActive {
 		return nil, errors.New("user is not active")
+	}
+
+	if user.AuthMethod != string(domain.AuthMethodPassword) && user.AuthMethod != string(domain.AuthMethodHybrid) {
+		return nil, errors.New("this account uses SSO authentication. Please use Google login")
+	}
+
+	if user.Password == "" {
+		return nil, errors.New("account has no password set")
 	}
 
 	err = auth.ComparePassword(input.Password, user.Password)

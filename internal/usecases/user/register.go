@@ -62,6 +62,7 @@ func (u *registerUsecase) Execute(ctx context.Context, user *domain.User) (*Regi
 	user.Password = string(hashedPassword)
 	user.IsActive = true
 	user.VerifiedEmail = false
+	user.AuthMethod = string(domain.AuthMethodPassword)
 
 	userID, err := app.Repositories.User.Create(ctx, *user)
 	if err != nil {
