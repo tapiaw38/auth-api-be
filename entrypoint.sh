@@ -1,10 +1,15 @@
 #!/bin/sh
+set -e
 
-echo "Waiting for Postgres at ${PG_DB_HOST:-auth-postgres-db}:${PG_DB_PORT:-5432}..."
-until nc -z "${PG_DB_HOST:-auth-postgres-db}" "${PG_DB_PORT:-5432}"; do
-    sleep 1
-done
-echo "Postgres is ready."
+if [ "${SKIP_POSTGRES_CHECK:-false}" != "true" ]; then
+    echo "Waiting for Postgres at ${PG_DB_HOST:-auth-postgres-db}:${PG_DB_PORT:-5432}..."
+    until nc -z "${PG_DB_HOST:-auth-postgres-db}" "${PG_DB_PORT:-5432}"; do
+        sleep 1
+    done
+    echo "Postgres is ready."
+else
+    echo "Skipping Postgres check (using AWS RDS)"
+fi
 
 echo "Waiting for RabbitMQ at ${RABBIT_HOST:-rabbitmq}:${RABBIT_PORT:-5672}..."
 until nc -z "${RABBIT_HOST:-rabbitmq}" "${RABBIT_PORT:-5672}"; do
