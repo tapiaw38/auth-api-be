@@ -33,5 +33,9 @@ func (u *getTokenVersionUsecase) Execute(ctx context.Context, username string) (
 		return 0, err
 	}
 
+	if user == nil {
+		return 0, nil
+	}
+
 	return user.TokenVersion, nil
 }

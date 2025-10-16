@@ -24,22 +24,23 @@ func (r *repository) Update(ctx context.Context, id string, user *domain.User) (
 
 func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *domain.User) (*sql.Row, error) {
 	query := `UPDATE users
-		SET 
-			first_name = COALESCE($1, first_name), 
-			last_name = COALESCE($2, last_name), 
+		SET
+			first_name = COALESCE($1, first_name),
+			last_name = COALESCE($2, last_name),
 			email = COALESCE($3, email),
-			password = COALESCE($4, password), 
-			picture = COALESCE($5, picture), 
-			phone_number = COALESCE($6, phone_number), 
-			address = COALESCE($7, address), 
-			is_active = COALESCE($8, is_active), 
-			verified_email = COALESCE($9, verified_email), 
-			verified_email_token = COALESCE($10, verified_email_token), 
+			password = COALESCE($4, password),
+			picture = COALESCE($5, picture),
+			phone_number = COALESCE($6, phone_number),
+			address = COALESCE($7, address),
+			is_active = COALESCE($8, is_active),
+			verified_email = COALESCE($9, verified_email),
+			verified_email_token = COALESCE($10, verified_email_token),
 			verified_email_token_expiry = COALESCE($11, verified_email_token_expiry),
-			password_reset_token = COALESCE($12, password_reset_token), 
+			password_reset_token = COALESCE($12, password_reset_token),
 			password_reset_token_expiry = COALESCE($13, password_reset_token_expiry),
-			updated_at = $14
-		WHERE id = $15
+			auth_method = COALESCE($14, auth_method),
+			updated_at = $15
+		WHERE id = $16
 		RETURNING id;`
 
 	var (
@@ -91,6 +92,7 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 		verifiedEmailTokenExpiry,
 		passwordResetToken,
 		passwordResetTokenExpiry,
+		user.AuthMethod,
 		user.UpdatedAt,
 		id,
 	}

@@ -12,7 +12,7 @@ import (
 
 type (
 	ResetPasswordUsecase interface {
-		Execute(context.Context, string, string) (*ResetPasswordOutput, error)
+		Execute(context.Context, ResetPasswordInput) (*ResetPasswordOutput, error)
 	}
 
 	resetPasswordUsecase struct {
@@ -22,6 +22,11 @@ type (
 	ResetPasswordOutput struct {
 		Data ResetPasswordOutputData `json:"data"`
 	}
+
+	ResetPasswordInput struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
 )
 
 func NewResetPasswordUsecase(contextFactory appcontext.Factory) ResetPasswordUsecase {
@@ -30,13 +35,13 @@ func NewResetPasswordUsecase(contextFactory appcontext.Factory) ResetPasswordUse
 	}
 }
 
-func (u *resetPasswordUsecase) Execute(ctx context.Context, token, password string) (*ResetPasswordOutput, error) {
+func (u *resetPasswordUsecase) Execute(ctx context.Context, input ResetPasswordInput) (*ResetPasswordOutput, error) {
 	app := u.contextFactory()
 
 	user, err := app.Repositories.User.Get(
 		ctx,
 		user_repo.GetFilterOptions{
-			PasswordResetToken: token,
+			PasswordResetToken: input.Token,
 		},
 	)
 	if err != nil {
@@ -51,7 +56,11 @@ func (u *resetPasswordUsecase) Execute(ctx context.Context, token, password stri
 		return nil, errors.New("token expired or invalid")
 	}
 
-	hashedPassword, err := auth.HashedPassword(password)
+	if err := auth.ValidatePasswordStrength(input.Password); err != nil {
+		return nil, err
+	}
+
+	hashedPassword, err := auth.HashedPassword(input.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +72,10 @@ func (u *resetPasswordUsecase) Execute(ctx context.Context, token, password stri
 		user.ID,
 		user,
 	); err != nil {
+		return nil, err
+	}
+
+	if err := app.Repositories.User.InvalidatePasswordResetToken(ctx, user.ID); err != nil {
 		return nil, err
 	}
 

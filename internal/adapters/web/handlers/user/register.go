@@ -9,7 +9,7 @@ import (
 
 func NewRegisterHandler(usecase user.RegisterUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var user RegisterInput
+		var user user.RegisterInput
 		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"message": err.Error(),
@@ -17,7 +17,7 @@ func NewRegisterHandler(usecase user.RegisterUsecase) gin.HandlerFunc {
 			return
 		}
 
-		output, err := usecase.Execute(c, user.toDomain())
+		output, err := usecase.Execute(c, user)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),

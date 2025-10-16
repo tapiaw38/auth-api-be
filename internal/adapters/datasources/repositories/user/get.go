@@ -16,7 +16,7 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 	}
 
 	var (
-		id, firstName, lastName, username, email, password, verifiedEmailToken string
+		id, firstName, lastName, username, email, password, verifiedEmailToken, authMethod string
 	)
 	var phoneNumber, picture, address, passwordResetToken *string
 	var isActive, verifiedEmail bool
@@ -42,6 +42,7 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 		&passwordResetToken,
 		&passwordResetTokenExpiry,
 		&tokenVersion,
+		&authMethod,
 		&createdAt,
 		&updatedAt,
 		&rolesJSON,
@@ -76,6 +77,7 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 		passwordResetToken,
 		passwordResetTokenExpiry,
 		tokenVersion,
+		authMethod,
 		createdAt,
 		updatedAt,
 		roles,
@@ -83,12 +85,12 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 }
 
 func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptions) (*sql.Row, error) {
-	query := `SELECT 
-				u.id, u.first_name, u.last_name, u.username, 
-				u.email, u.password, u.phone_number, u.picture, u.address, 
+	query := `SELECT
+				u.id, u.first_name, u.last_name, u.username,
+				u.email, u.password, u.phone_number, u.picture, u.address,
 				u.is_active, u.verified_email, u.verified_email_token,
 				u.verified_email_token_expiry, u.password_reset_token,
-				u.password_reset_token_expiry, u.token_version,
+				u.password_reset_token_expiry, u.token_version, u.auth_method,
 				u.created_at, u.updated_at,
 				COALESCE(
 					json_agg(
@@ -132,13 +134,14 @@ func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptio
 		args = append(args, filters.PasswordResetToken)
 	}
 
-	query += ` GROUP BY 
-		u.id, u.first_name, u.last_name, 
-		u.username, u.email, u.password, 
-		u.phone_number, u.picture, u.address, 
-		u.is_active, u.verified_email, 
-		u.verified_email_token, u.verified_email_token_expiry, 
-		u.password_reset_token, u.password_reset_token_expiry, 
+	query += ` GROUP BY
+		u.id, u.first_name, u.last_name,
+		u.username, u.email, u.password,
+		u.phone_number, u.picture, u.address,
+		u.is_active, u.verified_email,
+		u.verified_email_token, u.verified_email_token_expiry,
+		u.password_reset_token, u.password_reset_token_expiry,
+		u.token_version, u.auth_method,
 		u.created_at, u.updated_at`
 
 	row := r.db.QueryRowContext(ctx, query, args...)

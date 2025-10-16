@@ -8,7 +8,7 @@ COPY go.mod go.sum /app/
 
 RUN go mod download
 
-RUN apk update && apk add --no-cache postgresql-client curl && \
+RUN apk update && apk add --no-cache postgresql-client curl netcat-openbsd && \
     curl -L -o /usr/local/bin/migrate https://github.com/golang-migrate/migrate/releases/download/v4.15.0/migrate.linux-amd64.tar.gz && \
     chmod +x /usr/local/bin/migrate
 

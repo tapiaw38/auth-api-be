@@ -14,6 +14,7 @@ type (
 		IsActive      bool             `json:"is_active"`
 		VerifiedEmail bool             `json:"verified_email"`
 		TokenVersion  uint             `json:"token_version"`
+		AuthMethod    string           `json:"auth_method"`
 		Roles         []RoleOutputData `json:"roles"`
 	}
 
@@ -48,6 +49,7 @@ func toUserOutputData(user *domain.User) UserOutputData {
 		IsActive:      user.IsActive,
 		VerifiedEmail: user.VerifiedEmail,
 		TokenVersion:  user.TokenVersion,
+		AuthMethod:    user.AuthMethod,
 		Roles:         roles,
 	}
 }

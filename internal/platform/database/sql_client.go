@@ -69,19 +69,31 @@ func Makemigration() error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		srcErr, dbErr := m.Close()
+		if srcErr != nil {
+			log.Printf("migrations: error closing source: %v", srcErr)
+		}
+		if dbErr != nil {
+			log.Printf("migrations: error closing database: %v", dbErr)
+		}
+	}()
 
-	version, _, _ := m.Version()
-	log.Printf("migrations: current version is %v", version)
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return fmt.Errorf("failed to get migration version: %w", err)
+	}
+	log.Printf("migrations: current version is %v (dirty: %v)", version, dirty)
 
 	if err := m.Up(); err != nil {
-		if err != migrate.ErrNoChange {
-			return err
+		if err == migrate.ErrNoChange {
+			log.Println("migrations: no new migrations to apply")
+			return nil
 		}
-		log.Println("migrations:", err)
-		return nil
+		return fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
-	log.Println("migrations: database migrated")
+	log.Println("migrations: database migrated successfully")
 
 	return nil
 }

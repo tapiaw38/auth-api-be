@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
@@ -35,21 +36,26 @@ func (e *ensureUseCase) Execute(ctx context.Context) error {
 	}
 
 	for _, roleName := range roleNames {
-		if _, err := app.Repositories.Role.Get(
+		existingRole, err := app.Repositories.Role.Get(
 			ctx, role.GetFilterOptions{Name: string(roleName)},
-		); err == nil {
+		)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+
+		if existingRole != nil {
 			continue
 		}
 
 		id, err := uuid.NewUUID()
 		if err != nil {
-			return nil
+			return err
 		}
-		role := domain.Role{
+		newRole := domain.Role{
 			ID:   id.String(),
 			Name: roleName,
 		}
-		if _, err := app.Repositories.Role.Create(ctx, role); err != nil {
+		if _, err := app.Repositories.Role.Create(ctx, newRole); err != nil {
 			return err
 		}
 	}

@@ -15,6 +15,8 @@ type (
 		Update(context.Context, string, *domain.User) (string, error)
 		Delete(context.Context, string) error
 		List(context.Context, ListFilterOptions) ([]*domain.User, error)
+		ChangePassword(ctx context.Context, id string, password string) error
+		InvalidatePasswordResetToken(ctx context.Context, id string) error
 	}
 
 	repository struct {
