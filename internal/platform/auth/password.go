@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode"
 
-	"golang.org/x/crypto/bcrypt"
 	"github.com/tapiaw38/auth-api-be/internal/platform/utils"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func HashedPassword(password string) ([]byte, error) {
@@ -75,13 +75,11 @@ func ValidatePasswordStrength(password string) error {
 	return nil
 }
 
-// ValidateEmail validates the email format
 func ValidateEmail(email string) error {
 	if email == "" {
 		return errors.New("email is required")
 	}
 
-	// Email regex pattern
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(email) {
 		return errors.New("invalid email format")
@@ -94,21 +92,15 @@ func ValidateEmail(email string) error {
 	return nil
 }
 
-// GenerateUsername generates a unique username from first name, last name and a random 10-character string
 func GenerateUsername(firstName, lastName string) string {
-	// Normalize names: remove spaces, convert to lowercase
 	normalizedFirst := strings.ToLower(strings.TrimSpace(firstName))
 	normalizedLast := strings.ToLower(strings.TrimSpace(lastName))
 
-	// Remove special characters and keep only alphanumeric
 	reg := regexp.MustCompile("[^a-z0-9]+")
 	normalizedFirst = reg.ReplaceAllString(normalizedFirst, "")
 	normalizedLast = reg.ReplaceAllString(normalizedLast, "")
 
-	// Generate random string of 10 characters
 	randomSuffix := utils.RandomString(10)
-
-	// Combine: firstname.lastname.random
 	username := normalizedFirst + "." + normalizedLast + "." + strings.ToLower(randomSuffix)
 
 	return username
