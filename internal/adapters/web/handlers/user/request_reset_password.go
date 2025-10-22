@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	"github.com/tapiaw38/auth-api-be/internal/usecases/user"
 )
 
@@ -15,25 +17,23 @@ func NewRequestResetPasswordHandler(usecase user.RequestResetPasswordUsecase) fu
 	return func(c *gin.Context) {
 		var input RequestResetPasswordInput
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Invalid request format",
-				"error":   err.Error(),
-			})
+			appErr := apperrors.NewApplicationError(mappings.RequestBodyParsingError, err)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
 		if input.Email == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Email is required",
-			})
+			appErr := apperrors.NewApplicationError(mappings.UserRequestResetPasswordEmailRequiredError, nil)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
-		output, err := usecase.Execute(c, input.Email)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		output, appErr := usecase.Execute(c, input.Email)
+		if appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

@@ -63,6 +63,145 @@ This is a **Clean Architecture** Go REST API for authentication with the followi
 - **App Context Factory** (`internal/platform/appcontext/`) - Dependency injection container
 - **Configuration** (`internal/platform/config/`) - Environment-based config management
 - **Database Platform** (`internal/platform/database/`) - Database connection and migration management
+- **Error Handling** (`internal/platform/errors/`) - Structured error management system
+
+### Error Handling System
+
+The application uses a structured error handling system based on best practices from `fury_taxes-workflow-be`:
+
+#### Structure
+
+```
+internal/platform/errors/
+├── application_error.go    # ApplicationError interface & implementation
+├── logging.go              # Error logging functionality
+└── mappings/
+    ├── error_details.go   # Base ErrorDetails struct
+    ├── auth.go            # Authentication errors
+    ├── user.go            # User domain errors
+    ├── role.go            # Role domain errors
+    └── common.go          # Common/generic errors
+```
+
+#### Key Features
+
+- **Unique error codes**: Each error has a unique identifier (e.g., `"user:login:invalid-credentials"`)
+- **Appropriate HTTP status codes**: 400, 401, 403, 404, 409, 500, etc.
+- **Centralized error messages**: All error messages defined in mapping files
+- **Automatic logging**: Errors log with structured context
+- **JSON serialization**: Consistent error response format
+- **Original error tracking**: Preserves technical error details for debugging
+
+#### Usage in Use Cases
+
+```go
+import (
+    apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+    "github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+)
+
+// Update interface signature
+type LoginUsecase interface {
+    Execute(context.Context, LoginInput) (*LoginOutput, apperrors.ApplicationError)
+}
+
+// Create application errors
+func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOutput, apperrors.ApplicationError) {
+    user, err := app.Repositories.User.Get(ctx, filters)
+    if err != nil {
+        return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+    }
+
+    if user == nil {
+        return nil, apperrors.NewApplicationError(
+            mappings.UserLoginUserNotFoundError,
+            errors.New("user not found"),
+        )
+    }
+
+    return &LoginOutput{Data: data}, nil
+}
+```
+
+#### Usage in Handlers
+
+```go
+import (
+    apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+    "github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+)
+
+func NewLoginHandler(usecase user.LoginUsecase) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var login user.LoginInput
+        if err := c.ShouldBindJSON(&login); err != nil {
+            appErr := apperrors.NewApplicationError(mappings.RequestBodyParsingError, err)
+            appErr.Log(c)  // Log with context
+            c.JSON(appErr.StatusCode(), appErr)  // Return appropriate status
+            return
+        }
+
+        output, appErr := usecase.Execute(c, login)
+        if appErr != nil {
+            appErr.Log(c)
+            c.JSON(appErr.StatusCode(), appErr)
+            return
+        }
+
+        c.JSON(http.StatusOK, output)
+    }
+}
+```
+
+#### Error Response Format
+
+```json
+{
+  "code": "user:login:invalid-credentials",
+  "message": "invalid email or password"
+}
+```
+
+#### Adding New Errors
+
+1. Define the error in the appropriate mapping file:
+
+```go
+// In mappings/user.go
+var (
+    UserProfileUpdateFailedError = ErrorDetails{
+        "user:profile:update-failed",
+        http.StatusInternalServerError,
+        "failed to update user profile",
+    }
+)
+```
+
+2. Use it in your code:
+
+```go
+if err != nil {
+    return nil, apperrors.NewApplicationError(mappings.UserProfileUpdateFailedError, err)
+}
+```
+
+#### Error Code Naming Convention
+
+Format: `{domain}:{action}:{error-type}`
+
+Examples:
+- `user:login:invalid-credentials`
+- `role:create:name-required`
+- `user:reset-password:invalid-token`
+- `auth:token-version-mismatch`
+
+#### Best Practices
+
+1. **Always log errors** before returning to client: `appErr.Log(c)`
+2. **Use appropriate HTTP status codes**: 400 (validation), 401 (auth), 404 (not found), 500 (server)
+3. **User-friendly messages**: `Message` field for users, `OriginalMessage` for debugging
+4. **Never expose sensitive data**: Keep error messages generic for security
+5. **Add context when needed**: Use `AddExtraFields()` for additional logging context
 
 ### Authentication & Authorization
 

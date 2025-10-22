@@ -11,6 +11,8 @@ import (
 	mock_role "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	"go.uber.org/mock/gomock"
 )
@@ -24,7 +26,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 		input       usecase.CreateInput
 		prepare     func(f *fields)
 		expected    *usecase.CreateOutput
-		expectedErr error
+		expectedErr apperrors.ApplicationError
 	}{
 		"when creating role successfully": {
 			input: usecase.CreateInput{
@@ -98,7 +100,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 			},
 			prepare:     func(f *fields) {},
 			expected:    nil,
-			expectedErr: errors.New("role name is required"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, errors.New("role name is required")),
 		},
 		"when creating role with invalid name": {
 			input: usecase.CreateInput{
@@ -106,7 +108,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 			},
 			prepare:     func(f *fields) {},
 			expected:    nil,
-			expectedErr: errors.New("invalid role name"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, errors.New("invalid role name")),
 		},
 		"when repository create returns error": {
 			input: usecase.CreateInput{
@@ -118,7 +120,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 					Return("", errors.New("database connection error"))
 			},
 			expected:    nil,
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateQueryError, errors.New("database connection error")),
 		},
 		"when repository get returns error after create": {
 			input: usecase.CreateInput{
@@ -133,7 +135,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 					Return(nil, errors.New("database connection error"))
 			},
 			expected:    nil,
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleGetQueryError, errors.New("database connection error")),
 		},
 	}
 

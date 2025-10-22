@@ -11,12 +11,14 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	"github.com/tapiaw38/auth-api-be/internal/platform/utils"
 )
 
 type (
 	LoginUsecase interface {
-		Execute(context.Context, LoginInput) (*LoginOutput, error)
+		Execute(context.Context, LoginInput) (*LoginOutput, apperrors.ApplicationError)
 	}
 
 	loginUsecase struct {
@@ -42,53 +44,53 @@ func NewLoginUsecase(contextFactory appcontext.Factory) LoginUsecase {
 	}
 }
 
-func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOutput, error) {
+func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
 	var findUser *string
 	if input.SsoType == string(domain.SsoTypeGoogle) {
-		userID, err := googleLogin(ctx, app, input)
-		if err != nil {
-			return nil, err
+		userID, appErr := googleLogin(ctx, app, input)
+		if appErr != nil {
+			return nil, appErr
 		}
 
 		if userID == nil {
-			return nil, errors.New("user not found")
+			return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found after google login"))
 		}
 
 		findUser = userID
 
 	} else {
-		userID, err := emailAndPasswordLogin(ctx, app, input)
-		if err != nil {
-			return nil, err
+		userID, appErr := emailAndPasswordLogin(ctx, app, input)
+		if appErr != nil {
+			return nil, appErr
 		}
 
 		if userID == nil {
-			return nil, errors.New("user not found")
+			return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found after email login"))
 		}
 
 		findUser = userID
 	}
 
 	if findUser == nil {
-		return nil, errors.New("user not found")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found"))
 	}
 
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		ID: *findUser,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
 	}
 
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found"))
 	}
 
 	token, err := auth.GenerateToken(user, time.Hour*24*7)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserLoginTokenGenerationError, err)
 	}
 
 	return &LoginOutput{
@@ -97,33 +99,33 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 	}, nil
 }
 
-func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, error) {
+func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, apperrors.ApplicationError) {
 	token, err := app.Integrations.SSO.ExchangeCode(ctx, input.Code)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserLoginGoogleExchangeError, err)
 	}
 
 	userInfo, err := app.Integrations.SSO.GetUserInfo(ctx, token)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserLoginGoogleUserInfoError, err)
 	}
 
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: userInfo.Email,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
 	}
 
 	if user == nil {
 		id, err := uuid.NewUUID()
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.InternalServerError, err)
 		}
 
 		encodedString, err := utils.GetEncodedString()
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.InternalServerError, err)
 		}
 
 		userInsert := domain.User{
@@ -144,28 +146,28 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 
 		createdUserID, err := app.Repositories.User.Create(ctx, userInsert)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, err)
 		}
 
 		defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
 			Name: string(domain.RoleUser),
 		})
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.RoleEnsureDefaultRoleNotFoundError, err)
 		}
 
 		if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
 			UserID: createdUserID,
 			RoleID: defaultRole.ID,
 		}); err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.UserRegisterAssignRoleError, err)
 		}
 
 		return &createdUserID, nil
 	}
 
 	if !user.IsActive {
-		return nil, errors.New("user is not active")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotActiveError, errors.New("user is not active"))
 	}
 	if !user.VerifiedEmail {
 		user.VerifiedEmail = userInfo.VerifiedEmail
@@ -176,35 +178,39 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 
 	updatedUserID, err := app.Repositories.User.Update(ctx, user.ID, user)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateQueryError, err)
 	}
 
 	return &updatedUserID, nil
 }
 
-func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, error) {
+func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, apperrors.ApplicationError) {
 	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: input.Email,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+	}
+
+	if user == nil {
+		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found with email"))
 	}
 
 	if !user.IsActive {
-		return nil, errors.New("user is not active")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotActiveError, errors.New("user is not active"))
 	}
 
 	if user.AuthMethod != string(domain.AuthMethodPassword) && user.AuthMethod != string(domain.AuthMethodHybrid) {
-		return nil, errors.New("this account uses SSO authentication. Please use Google login")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginSSOAuthMethodError, errors.New("this account uses SSO authentication"))
 	}
 
 	if user.Password == "" {
-		return nil, errors.New("account has no password set")
+		return nil, apperrors.NewApplicationError(mappings.UserLoginNoPasswordSetError, errors.New("account has no password set"))
 	}
 
 	err = auth.ComparePassword(input.Password, user.Password)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserLoginInvalidCredentialsError, err)
 	}
 
 	return &user.ID, nil
