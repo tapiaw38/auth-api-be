@@ -83,6 +83,72 @@ var (
 		"failed to assign default role to user",
 	}
 
+	UserRegisterFirstNameRequiredError = ErrorDetails{
+		"user:register:first-name-required",
+		http.StatusBadRequest,
+		"first name is required",
+	}
+
+	UserRegisterLastNameRequiredError = ErrorDetails{
+		"user:register:last-name-required",
+		http.StatusBadRequest,
+		"last name is required",
+	}
+
+	UserRegisterInvalidEmailError = ErrorDetails{
+		"user:register:invalid-email",
+		http.StatusBadRequest,
+		"invalid email format",
+	}
+
+	UserRegisterEmailInUseError = ErrorDetails{
+		"user:register:email-in-use",
+		http.StatusConflict,
+		"email already in use",
+	}
+
+	UserRegisterWeakPasswordError = ErrorDetails{
+		"user:register:weak-password",
+		http.StatusBadRequest,
+		"password does not meet strength requirements",
+	}
+
+	UserRegisterTokenGenerationError = ErrorDetails{
+		"user:register:token-generation-error",
+		http.StatusInternalServerError,
+		"failed to generate verification token",
+	}
+
+	UserRegisterPasswordHashError = ErrorDetails{
+		"user:register:password-hash-error",
+		http.StatusInternalServerError,
+		"failed to hash password",
+	}
+
+	UserRegisterUUIDGenerationError = ErrorDetails{
+		"user:register:uuid-generation-error",
+		http.StatusInternalServerError,
+		"failed to generate user ID",
+	}
+
+	UserRegisterGetRoleError = ErrorDetails{
+		"user:register:get-role-error",
+		http.StatusInternalServerError,
+		"failed to retrieve default role",
+	}
+
+	UserRegisterGetUserError = ErrorDetails{
+		"user:register:get-user-error",
+		http.StatusInternalServerError,
+		"failed to retrieve created user",
+	}
+
+	UserRegisterEmailSendError = ErrorDetails{
+		"user:register:email-send-error",
+		http.StatusInternalServerError,
+		"failed to send verification email",
+	}
+
 	// Get user errors
 	UserGetNotFoundError = ErrorDetails{
 		"user:get:not-found",
@@ -166,6 +232,18 @@ var (
 		"reset token is required",
 	}
 
+	UserResetPasswordPasswordRequiredError = ErrorDetails{
+		"user:reset-password:password-required",
+		http.StatusBadRequest,
+		"password is required",
+	}
+
+	UserResetPasswordPasswordTooShortError = ErrorDetails{
+		"user:reset-password:password-too-short",
+		http.StatusBadRequest,
+		"password must be at least 8 characters long",
+	}
+
 	UserResetPasswordNewPasswordRequiredError = ErrorDetails{
 		"user:reset-password:new-password-required",
 		http.StatusBadRequest,
@@ -209,6 +287,18 @@ var (
 		"failed to change password",
 	}
 
+	UserChangePasswordSamePasswordError = ErrorDetails{
+		"user:change-password:same-password",
+		http.StatusBadRequest,
+		"new password must be different from current password",
+	}
+
+	UserChangePasswordWeakPasswordError = ErrorDetails{
+		"user:change-password:weak-password",
+		http.StatusBadRequest,
+		"password does not meet strength requirements",
+	}
+
 	// Verify email errors
 	UserVerifyEmailTokenRequiredError = ErrorDetails{
 		"user:verify-email:token-required",
@@ -239,5 +329,17 @@ var (
 		"user:set-password:update-error",
 		http.StatusInternalServerError,
 		"failed to set password",
+	}
+
+	UserSetPasswordNotSSOUserError = ErrorDetails{
+		"user:set-password:not-sso-user",
+		http.StatusBadRequest,
+		"only SSO users can set initial password",
+	}
+
+	UserSetPasswordWeakPasswordError = ErrorDetails{
+		"user:set-password:weak-password",
+		http.StatusBadRequest,
+		"password does not meet strength requirements",
 	}
 )

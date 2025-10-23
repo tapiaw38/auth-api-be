@@ -6,17 +6,18 @@ import (
 	"time"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 )
 
 type (
 	Repository interface {
-		Create(context.Context, domain.User) (string, error)
-		Get(context.Context, GetFilterOptions) (*domain.User, error)
-		Update(context.Context, string, *domain.User) (string, error)
-		Delete(context.Context, string) error
-		List(context.Context, ListFilterOptions) ([]*domain.User, error)
-		ChangePassword(ctx context.Context, id string, password string) error
-		InvalidatePasswordResetToken(ctx context.Context, id string) error
+		Create(context.Context, domain.User) (string, apperrors.ApplicationError)
+		Get(context.Context, GetFilterOptions) (*domain.User, apperrors.ApplicationError)
+		Update(context.Context, string, *domain.User) (string, apperrors.ApplicationError)
+		Delete(context.Context, string) apperrors.ApplicationError
+		List(context.Context, ListFilterOptions) ([]*domain.User, apperrors.ApplicationError)
+		ChangePassword(ctx context.Context, id string, password string) apperrors.ApplicationError
+		InvalidatePasswordResetToken(ctx context.Context, id string) apperrors.ApplicationError
 	}
 
 	repository struct {

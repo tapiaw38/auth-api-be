@@ -3,7 +3,6 @@ package mappings
 import "net/http"
 
 var (
-	// Authentication errors
 	AuthMissingTokenError = ErrorDetails{
 		"auth:missing-token",
 		http.StatusUnauthorized,
@@ -40,7 +39,6 @@ var (
 		"you do not have permission to access this resource",
 	}
 
-	// Password errors
 	AuthPasswordHashError = ErrorDetails{
 		"auth:password-hash-error",
 		http.StatusInternalServerError,

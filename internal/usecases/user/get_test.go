@@ -2,7 +2,6 @@ package user_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -12,6 +11,8 @@ import (
 	mock_user "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	"go.uber.org/mock/gomock"
 )
@@ -30,7 +31,7 @@ func TestGetUsecase_Execute(t *testing.T) {
 		input       user.GetFilterOptions
 		prepare     func(f *fields)
 		expected    *usecase.GetOutput
-		expectedErr error
+		expectedErr apperrors.ApplicationError
 	}{
 		"when getting user by ID successfully": {
 			input: user.GetFilterOptions{
@@ -137,9 +138,9 @@ func TestGetUsecase_Execute(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().
 					Get(gomock.Any(), user.GetFilterOptions{ID: "user-123"}).
-					Return(nil, errors.New("database connection error"))
+					Return(nil, apperrors.NewApplicationError(mappings.UserGetQueryError, nil))
 			},
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserGetQueryError, nil),
 		},
 		"when user not found": {
 			input: user.GetFilterOptions{
@@ -150,7 +151,7 @@ func TestGetUsecase_Execute(t *testing.T) {
 					Get(gomock.Any(), user.GetFilterOptions{ID: "non-existent-user"}).
 					Return(nil, nil)
 			},
-			expectedErr: errors.New("user not found"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserGetNotFoundError, nil),
 		},
 	}
 

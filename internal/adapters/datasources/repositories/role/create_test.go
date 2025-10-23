@@ -81,7 +81,7 @@ func TestRepository_Create(t *testing.T) {
 			},
 			expectedID:    "",
 			expectedError: true,
-			errorMsg:      "sql: connection is already closed",
+			errorMsg:      "failed to create role",
 		},
 		{
 			name: "query execution error",
@@ -96,7 +96,7 @@ func TestRepository_Create(t *testing.T) {
 			},
 			expectedID:    "",
 			expectedError: true,
-			errorMsg:      "sql: transaction has already been committed or rolled back",
+			errorMsg:      "failed to create role",
 		},
 		{
 			name: "scan error - no rows returned",
@@ -112,7 +112,7 @@ func TestRepository_Create(t *testing.T) {
 			},
 			expectedID:    "",
 			expectedError: true,
-			errorMsg:      "sql: no rows in result set",
+			errorMsg:      "failed to create role",
 		},
 		{
 			name: "scan error - incorrect column type",
@@ -178,17 +178,17 @@ func TestRepository_Create(t *testing.T) {
 			ctx := context.Background()
 
 			// Act
-			id, err := repo.Create(ctx, tt.role)
+			id, appErr := repo.Create(ctx, tt.role)
 
 			// Assert
 			if tt.expectedError {
-				assert.Error(t, err)
+				assert.Error(t, appErr)
 				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
+					assert.Contains(t, appErr.Message(), tt.errorMsg)
 				}
 				assert.Empty(t, id)
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, appErr)
 				assert.Equal(t, tt.expectedID, id)
 			}
 

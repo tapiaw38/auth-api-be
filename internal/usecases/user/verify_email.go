@@ -8,11 +8,13 @@ import (
 
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	VerifyEmailUsecase interface {
-		Execute(context.Context, string) (string, error)
+		Execute(context.Context, string) (string, apperrors.ApplicationError)
 	}
 
 	verifyEmailUsecase struct {
@@ -26,7 +28,7 @@ func NewVerifyEmailUsecase(contextFactory appcontext.Factory) VerifyEmailUsecase
 	}
 }
 
-func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string, error) {
+func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
 	user, err := app.Repositories.User.Get(
@@ -36,11 +38,11 @@ func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string,
 		},
 	)
 	if err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.UserVerifyEmailInvalidTokenError, err)
 	}
 
 	if time.Now().After(user.VerifiedEmailTokenExpiry) {
-		return "", errors.New("token expired")
+		return "", apperrors.NewApplicationError(mappings.UserVerifyEmailInvalidTokenError, errors.New("token expired"))
 	}
 
 	user.VerifiedEmail = true
@@ -50,7 +52,7 @@ func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string,
 		user.ID,
 		user,
 	); err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.UserVerifyEmailUpdateError, err)
 	}
 
 	redirectURL := fmt.Sprintf(

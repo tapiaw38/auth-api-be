@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	"github.com/tapiaw38/auth-api-be/internal/usecases/user"
 )
 
@@ -11,41 +13,39 @@ func NewResetPasswordHandler(usecase user.ResetPasswordUsecase) func(c *gin.Cont
 	return func(c *gin.Context) {
 		var input user.ResetPasswordInput
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Invalid request format",
-				"error":   err.Error(),
-			})
+			appErr := apperrors.NewApplicationError(mappings.RequestBodyParsingError, err)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
 		// Validate token
 		if input.Token == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Password reset token is required",
-			})
+			appErr := apperrors.NewApplicationError(mappings.UserResetPasswordTokenRequiredError, nil)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
 		// Validate password basic requirements
 		if input.Password == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Password is required",
-			})
+			appErr := apperrors.NewApplicationError(mappings.UserResetPasswordPasswordRequiredError, nil)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
 		if len(input.Password) < 8 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Password must be at least 8 characters long",
-			})
+			appErr := apperrors.NewApplicationError(mappings.UserResetPasswordPasswordTooShortError, nil)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
-		output, err := usecase.Execute(c, input)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		output, appErr := usecase.Execute(c, input)
+		if appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

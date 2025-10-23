@@ -1,14 +1,17 @@
 package role_test
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
 	role_handler "github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/role"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -40,16 +43,18 @@ func TestDeleteHandler(t *testing.T) {
 		"when delete usecase returns error": {
 			url: "/role/role-123",
 			setupUsecase: func(mockUsecase *mock_role.MockDeleteUsecase) {
-				mockUsecase.EXPECT().Execute(gomock.Any(), "role-123").Return(assert.AnError)
+				mockUsecase.EXPECT().Execute(gomock.Any(), "role-123").Return(apperrors.NewApplicationError(mappings.RoleDeleteQueryError, errors.New("database error")))
 			},
 			expectedCode: 500,
-			expectedBody: `{"message":"` + assert.AnError.Error() + `"}`,
+			expectedBody: `{"code":"role:delete:query-error","message":"failed to delete role"}`,
 		},
 		"when role ID is missing": {
 			url: "/role/",
-			setupUsecase: func(mockUsecase *mock_role.MockDeleteUsecase) {},
+			setupUsecase: func(mockUsecase *mock_role.MockDeleteUsecase) {
+				mockUsecase.EXPECT().Execute(gomock.Any(), "").Return(apperrors.NewApplicationError(mappings.RoleDeleteIDRequiredError, nil))
+			},
 			expectedCode: 400,
-			expectedBody: `{"message":"role ID is required"}`,
+			expectedBody: `{"code":"role:delete:id-required","message":"role ID is required"}`,
 		},
 	}
 

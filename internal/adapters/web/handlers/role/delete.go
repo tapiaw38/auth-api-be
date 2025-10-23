@@ -10,18 +10,10 @@ import (
 func NewDeleteHandler(usecase role.DeleteUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
-		if id == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "role ID is required",
-			})
-			return
-		}
 
-		err := usecase.Execute(c, id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		if appErr := usecase.Execute(c, id); appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

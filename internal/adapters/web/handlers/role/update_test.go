@@ -2,15 +2,18 @@ package role_test
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
-	roleUsecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	role_handler "github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/role"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+	roleUsecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
+	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -56,32 +59,34 @@ func TestUpdateHandler(t *testing.T) {
 			url:  "/role/role-123",
 			body: `{"name":"user"}`,
 			setupUsecase: func(mockUsecase *mock_role.MockUpdateUsecase) {
-				mockUsecase.EXPECT().Execute(gomock.Any(), "role-123", roleUsecase.UpdateInput{Name: "user"}).Return(nil, assert.AnError)
+				mockUsecase.EXPECT().Execute(gomock.Any(), "role-123", roleUsecase.UpdateInput{Name: "user"}).Return(nil, apperrors.NewApplicationError(mappings.RoleUpdateQueryError, errors.New("database error")))
 			},
 			expectedCode: 500,
-			expectedBody: `{"message":"` + assert.AnError.Error() + `"}`,
+			expectedBody: `{"code":"role:update:query-error","message":"failed to update role"}`,
 		},
 		"when role ID is missing": {
 			url:  "/role/",
 			body: `{"name":"user"}`,
 			setupUsecase: func(mockUsecase *mock_role.MockUpdateUsecase) {
+				mockUsecase.EXPECT().Execute(gomock.Any(), "", roleUsecase.UpdateInput{Name: "user"}).
+					Return(nil, apperrors.NewApplicationError(mappings.RoleUpdateIDRequiredError, nil))
 			},
 			expectedCode: 400,
-			expectedBody: `{"message":"role ID is required"}`,
+			expectedBody: `{"code":"role:update:id-required","message":"role ID is required"}`,
 		},
 		"when request body is invalid": {
 			url:  "/role/role-123",
 			body: `{"invalid":}`,
 			setupUsecase: func(mockUsecase *mock_role.MockUpdateUsecase) {},
 			expectedCode: 400,
-			expectedBody: `{"message":"Invalid request body"}`,
+			expectedBody: `{"code":"common:request-body-parsing-error","message":"invalid request body format"}`,
 		},
 		"when name is missing": {
 			url:  "/role/role-123",
 			body: `{}`,
 			setupUsecase: func(mockUsecase *mock_role.MockUpdateUsecase) {},
 			expectedCode: 400,
-			expectedBody: `{"message":"Invalid request body"}`,
+			expectedBody: `{"code":"common:request-body-parsing-error","message":"invalid request body format"}`,
 		},
 	}
 
@@ -128,8 +133,9 @@ func TestUpdateHandler(t *testing.T) {
 						// This case is for when role ID is missing
 						assert.Contains(t, w.Body.String(), "role ID is required")
 					} else {
-						// Other 400 cases should contain "Invalid request body"
-						assert.Contains(t, w.Body.String(), "Invalid request body")
+						// Other 400 cases should contain the new error format
+						assert.Contains(t, w.Body.String(), "common:request-body-parsing-error")
+						assert.Contains(t, w.Body.String(), "invalid request body format")
 					}
 				} else {
 					assert.Contains(t, w.Body.String(), tc.expectedBody)

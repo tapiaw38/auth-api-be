@@ -2,7 +2,6 @@ package role_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,7 +99,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 			},
 			prepare:     func(f *fields) {},
 			expected:    nil,
-			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, errors.New("role name is required")),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, nil),
 		},
 		"when creating role with invalid name": {
 			input: usecase.CreateInput{
@@ -108,7 +107,7 @@ func TestCreateUsecase_Execute(t *testing.T) {
 			},
 			prepare:     func(f *fields) {},
 			expected:    nil,
-			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, errors.New("invalid role name")),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, nil),
 		},
 		"when repository create returns error": {
 			input: usecase.CreateInput{
@@ -117,10 +116,10 @@ func TestCreateUsecase_Execute(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().
 					Create(gomock.Any(), domain.Role{Name: domain.RoleAdmin}).
-					Return("", errors.New("database connection error"))
+					Return("", apperrors.NewApplicationError(mappings.RoleCreateQueryError, nil))
 			},
 			expected:    nil,
-			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateQueryError, errors.New("database connection error")),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateQueryError, nil),
 		},
 		"when repository get returns error after create": {
 			input: usecase.CreateInput{
@@ -132,10 +131,10 @@ func TestCreateUsecase_Execute(t *testing.T) {
 					Return("role-123", nil)
 				f.repository.EXPECT().
 					Get(gomock.Any(), roleRepo.GetFilterOptions{ID: "role-123"}).
-					Return(nil, errors.New("database connection error"))
+					Return(nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, nil))
 			},
 			expected:    nil,
-			expectedErr: apperrors.NewApplicationError(mappings.RoleGetQueryError, errors.New("database connection error")),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleGetQueryError, nil),
 		},
 	}
 

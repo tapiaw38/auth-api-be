@@ -57,7 +57,7 @@ func TestRepository_Delete(t *testing.T) {
 					WillReturnError(sql.ErrConnDone)
 			},
 			expectedError: true,
-			errorMsg:      "sql: connection is already closed",
+			errorMsg:      "failed to delete role",
 		},
 		{
 			name: "query execution error",
@@ -68,7 +68,7 @@ func TestRepository_Delete(t *testing.T) {
 					WillReturnError(driver.ErrBadConn)
 			},
 			expectedError: true,
-			errorMsg:      "expected a connection to be available",
+			errorMsg:      "failed to delete role",
 		},
 		{
 			name: "transaction error",
@@ -79,7 +79,7 @@ func TestRepository_Delete(t *testing.T) {
 					WillReturnError(sql.ErrTxDone)
 			},
 			expectedError: true,
-			errorMsg:      "sql: transaction has already been committed or rolled back",
+			errorMsg:      "failed to delete role",
 		},
 		{
 			name: "rows affected error",
@@ -91,7 +91,7 @@ func TestRepository_Delete(t *testing.T) {
 					WillReturnResult(result)
 			},
 			expectedError: true,
-			errorMsg:      "sql: connection is already closed",
+			errorMsg:      "failed to delete role",
 		},
 		{
 			name: "empty ID parameter",
@@ -159,16 +159,16 @@ func TestRepository_Delete(t *testing.T) {
 			ctx := context.Background()
 
 			// Act
-			err = repo.Delete(ctx, tt.id)
+			appErr := repo.Delete(ctx, tt.id)
 
 			// Assert
 			if tt.expectedError {
-				assert.Error(t, err)
+				assert.Error(t, appErr)
 				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
+					assert.Contains(t, appErr.Message(), tt.errorMsg)
 				}
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, appErr)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
@@ -317,11 +317,11 @@ func TestRepository_DeleteEdgeCases(t *testing.T) {
 			WillReturnError(context.DeadlineExceeded)
 
 		// Act
-		err = repo.Delete(ctx, "role-123")
+		appErr := repo.Delete(ctx, "role-123")
 
 		// Assert
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
+		assert.Error(t, appErr)
+		assert.Contains(t, appErr.Message(), "failed to delete role")
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }

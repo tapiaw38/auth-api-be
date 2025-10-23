@@ -12,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	mock_usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user/mocks"
 	"go.uber.org/mock/gomock"
 )
@@ -25,7 +27,7 @@ func TestSetPasswordHandler(t *testing.T) {
 		body               any
 		prepare            func(f *fields)
 		expectedStatusCode int
-		expectedErr        error
+		expectedErr        apperrors.ApplicationError
 	}{
 		"when password set successfully": {
 			body: user.SetPasswordRequest{
@@ -41,30 +43,30 @@ func TestSetPasswordHandler(t *testing.T) {
 				NewPassword: "NewPassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("some error"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(apperrors.NewApplicationError(mappings.UserSetPasswordUpdateError, errors.New("some error")))
 			},
 			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("some error"),
+			expectedErr:        apperrors.NewApplicationError(mappings.UserSetPasswordUpdateError, errors.New("some error")),
 		},
 		"when user is not SSO user": {
 			body: user.SetPasswordRequest{
 				NewPassword: "NewPassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("only SSO users can set initial password"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(apperrors.NewApplicationError(mappings.UserSetPasswordNotSSOUserError, errors.New("only SSO users can set initial password")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("only SSO users can set initial password"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserSetPasswordNotSSOUserError, errors.New("only SSO users can set initial password")),
 		},
 		"when password is too weak": {
 			body: user.SetPasswordRequest{
 				NewPassword: "weak",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(errors.New("password must be at least 8 characters long"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(apperrors.NewApplicationError(mappings.UserSetPasswordWeakPasswordError, errors.New("password must be at least 8 characters long")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("password must be at least 8 characters long"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserSetPasswordWeakPasswordError, errors.New("password must be at least 8 characters long")),
 		},
 		"when request body is invalid": {
 			body:               "invalid body",
@@ -100,7 +102,7 @@ func TestSetPasswordHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedStatusCode, w.Code)
 
 			if tc.expectedErr != nil {
-				assert.Contains(t, w.Body.String(), tc.expectedErr.Error())
+				assert.Contains(t, w.Body.String(), tc.expectedErr.Message())
 			}
 		})
 	}

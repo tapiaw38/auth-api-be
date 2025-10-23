@@ -2,7 +2,6 @@ package role
 
 import (
 	"context"
-	"errors"
 
 	roleRepo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
@@ -39,28 +38,28 @@ func (u *createUsecase) Execute(ctx context.Context, input CreateInput) (*Create
 	app := u.contextFactory()
 
 	if input.Name == "" {
-		return nil, apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, errors.New("role name is required"))
+		return nil, apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, nil)
 	}
 
 	roleName := domain.RoleName(input.Name)
 	switch roleName {
 	case domain.RoleSuperAdmin, domain.RoleAdmin, domain.RoleUser:
 	default:
-		return nil, apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, errors.New("invalid role name"))
+		return nil, apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, nil)
 	}
 
 	role := domain.Role{
 		Name: roleName,
 	}
 
-	id, err := app.Repositories.Role.Create(ctx, role)
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.RoleCreateQueryError, err)
+	id, appErr := app.Repositories.Role.Create(ctx, role)
+	if appErr != nil {
+		return nil, appErr
 	}
 
-	createdRole, err := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, err)
+	createdRole, appErr := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return &CreateOutput{

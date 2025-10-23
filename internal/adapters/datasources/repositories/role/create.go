@@ -5,17 +5,19 @@ import (
 	"database/sql"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Create(ctx context.Context, role domain.Role) (string, error) {
+func (r *repository) Create(ctx context.Context, role domain.Role) (string, apperrors.ApplicationError) {
 	row, err := r.executeCreateQuery(ctx, role)
 	if err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.RoleCreateQueryError, err)
 	}
 
 	var id string
 	if err := row.Scan(&id); err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.RoleCreateQueryError, err)
 	}
 
 	return id, nil

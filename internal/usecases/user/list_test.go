@@ -2,7 +2,6 @@ package user_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +10,8 @@ import (
 	mock_user "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	"go.uber.org/mock/gomock"
 )
@@ -27,7 +28,7 @@ func TestListUsecase(t *testing.T) {
 		filters      usecase.ListFilterOptions
 		prepare      func(f *fields)
 		expectedLen  int
-		expectedErr  error
+		expectedErr  apperrors.ApplicationError
 		validateData func(t *testing.T, result []usecase.UserOutputData)
 	}{
 		"successful list - all users": {
@@ -221,9 +222,9 @@ func TestListUsecase(t *testing.T) {
 				Offset: 0,
 			},
 			prepare: func(f *fields) {
-				f.repository.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, errors.New("database error"))
+				f.repository.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserListQueryError, nil))
 			},
-			expectedErr: errors.New("database error"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserListQueryError, nil),
 		},
 	}
 

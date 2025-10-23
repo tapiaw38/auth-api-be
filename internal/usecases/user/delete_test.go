@@ -2,13 +2,14 @@ package user_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories"
 	mock_user "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	"go.uber.org/mock/gomock"
 )
@@ -19,45 +20,43 @@ func TestDeleteUsecase(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		userID       string
-		prepare      func(f *fields)
-		expectedID   string
-		expectedErr  error
+		userID      string
+		prepare     func(f *fields)
+		expectedErr apperrors.ApplicationError
 	}{
 		"successful delete": {
 			userID: "user-123",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Delete(gomock.Any(), "user-123").Return(nil)
 			},
-			expectedID: "user-123",
 		},
 		"error - user not found": {
 			userID: "non-existent-user",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Delete(gomock.Any(), "non-existent-user").Return(errors.New("user not found"))
+				f.repository.EXPECT().Delete(gomock.Any(), "non-existent-user").Return(apperrors.NewApplicationError(mappings.UserDeleteNotFoundError, nil))
 			},
-			expectedErr: errors.New("user not found"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserDeleteNotFoundError, nil),
 		},
 		"error - database error": {
 			userID: "user-456",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Delete(gomock.Any(), "user-456").Return(errors.New("database error"))
+				f.repository.EXPECT().Delete(gomock.Any(), "user-456").Return(apperrors.NewApplicationError(mappings.UserDeleteQueryError, nil))
 			},
-			expectedErr: errors.New("database error"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserDeleteQueryError, nil),
 		},
 		"error - user has dependencies": {
 			userID: "user-789",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Delete(gomock.Any(), "user-789").Return(errors.New("cannot delete user with existing dependencies"))
+				f.repository.EXPECT().Delete(gomock.Any(), "user-789").Return(apperrors.NewApplicationError(mappings.UserDeleteQueryError, nil))
 			},
-			expectedErr: errors.New("cannot delete user with existing dependencies"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserDeleteQueryError, nil),
 		},
-		"successful delete - empty id should still call repository": {
+		"error - empty id validation": {
 			userID: "",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Delete(gomock.Any(), "").Return(errors.New("invalid user id"))
+				// No repository call expected - validation happens before
 			},
-			expectedErr: errors.New("invalid user id"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserDeleteNotFoundError, nil),
 		},
 	}
 
@@ -83,16 +82,9 @@ func TestDeleteUsecase(t *testing.T) {
 			}
 
 			uc := usecase.NewDeleteUsecase(contextFactory)
-			resultID, actualErr := uc.Execute(context.Background(), tc.userID)
+			actualErr := uc.Execute(context.Background(), tc.userID)
 
-			if tc.expectedErr != nil {
-				assert.Error(t, actualErr)
-				assert.Equal(t, tc.expectedErr.Error(), actualErr.Error())
-				assert.Empty(t, resultID)
-			} else {
-				assert.NoError(t, actualErr)
-				assert.Equal(t, tc.expectedID, resultID)
-			}
+			assert.Equal(t, tc.expectedErr, actualErr)
 		})
 	}
 }

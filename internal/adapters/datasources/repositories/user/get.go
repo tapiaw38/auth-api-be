@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain.User, error) {
+func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain.User, apperrors.ApplicationError) {
 	row, err := r.executeGetQuery(ctx, filters)
 	if err != nil {
 		return nil, err
@@ -25,7 +27,7 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 	var tokenVersion uint
 	var rolesJSON json.RawMessage
 
-	err = row.Scan(
+	err2 := row.Scan(
 		&id,
 		&firstName,
 		&lastName,
@@ -47,17 +49,17 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 		&updatedAt,
 		&rolesJSON,
 	)
-	if err != nil {
-		if err == sql.ErrNoRows {
+	if err2 != nil {
+		if err2 == sql.ErrNoRows {
 			return nil, nil
 		}
 
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err2)
 	}
 
-	roles, err := unmarshalRoles(rolesJSON)
-	if err != nil {
-		return nil, err
+	roles, err3 := unmarshalRoles(rolesJSON)
+	if err3 != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err3)
 	}
 
 	return unmarshalUser(
@@ -84,7 +86,7 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 	), nil
 }
 
-func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptions) (*sql.Row, error) {
+func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptions) (*sql.Row, apperrors.ApplicationError) {
 	query := `SELECT
 				u.id, u.first_name, u.last_name, u.username,
 				u.email, u.password, u.phone_number, u.picture, u.address,
@@ -146,7 +148,7 @@ func (r *repository) executeGetQuery(ctx context.Context, filters GetFilterOptio
 
 	row := r.db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
-		return nil, row.Err()
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, row.Err())
 	}
 
 	return row, nil

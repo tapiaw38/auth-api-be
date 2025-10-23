@@ -77,11 +77,11 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found"))
 	}
 
-	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		ID: *findUser,
 	})
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if user == nil {
@@ -110,11 +110,11 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 		return nil, apperrors.NewApplicationError(mappings.UserLoginGoogleUserInfoError, err)
 	}
 
-	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: userInfo.Email,
 	})
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if user == nil {
@@ -144,19 +144,19 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 			CreatedAt:                time.Now(),
 		}
 
-		createdUserID, err := app.Repositories.User.Create(ctx, userInsert)
-		if err != nil {
-			return nil, apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, err)
+		createdUserID, appErr := app.Repositories.User.Create(ctx, userInsert)
+		if appErr != nil {
+			return nil, appErr
 		}
 
-		defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
+		defaultRole, appErr := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
 			Name: string(domain.RoleUser),
 		})
-		if err != nil {
-			return nil, apperrors.NewApplicationError(mappings.RoleEnsureDefaultRoleNotFoundError, err)
+		if appErr != nil {
+			return nil, appErr
 		}
 
-		if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
+		if _, err := app.Repositories.UserRole.Create(ctx, domain.UserRole{
 			UserID: createdUserID,
 			RoleID: defaultRole.ID,
 		}); err != nil {
@@ -176,20 +176,20 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 		user.Picture = utils.ToPointer(userInfo.Picture)
 	}
 
-	updatedUserID, err := app.Repositories.User.Update(ctx, user.ID, user)
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserUpdateQueryError, err)
+	updatedUserID, appErr := app.Repositories.User.Update(ctx, user.ID, user)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return &updatedUserID, nil
 }
 
 func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, apperrors.ApplicationError) {
-	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: input.Email,
 	})
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if user == nil {
@@ -208,8 +208,7 @@ func emailAndPasswordLogin(ctx context.Context, app *appcontext.Context, input L
 		return nil, apperrors.NewApplicationError(mappings.UserLoginNoPasswordSetError, errors.New("account has no password set"))
 	}
 
-	err = auth.ComparePassword(input.Password, user.Password)
-	if err != nil {
+	if err := auth.ComparePassword(input.Password, user.Password); err != nil {
 		return nil, apperrors.NewApplicationError(mappings.UserLoginInvalidCredentialsError, err)
 	}
 

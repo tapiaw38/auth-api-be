@@ -2,15 +2,16 @@ package role
 
 import (
 	"context"
-	"errors"
 
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	GetUsecase interface {
-		Execute(context.Context, GetFilterOptions) (*GetOutput, error)
+		Execute(context.Context, GetFilterOptions) (*GetOutput, apperrors.ApplicationError)
 	}
 
 	getUsecase struct {
@@ -30,16 +31,16 @@ func NewGetUsecase(contextFactory appcontext.Factory) GetUsecase {
 	}
 }
 
-func (u *getUsecase) Execute(ctx context.Context, filters GetFilterOptions) (*GetOutput, error) {
+func (u *getUsecase) Execute(ctx context.Context, filters GetFilterOptions) (*GetOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
-	role, err := app.Repositories.Role.Get(ctx, role.GetFilterOptions(filters))
-	if err != nil {
-		return nil, err
+	role, appErr := app.Repositories.Role.Get(ctx, role.GetFilterOptions(filters))
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if role == nil {
-		return nil, errors.New("role not found")
+		return nil, apperrors.NewApplicationError(mappings.RoleGetNotFoundError, nil)
 	}
 
 	return &GetOutput{

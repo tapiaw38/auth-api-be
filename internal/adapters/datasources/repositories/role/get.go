@@ -5,12 +5,14 @@ import (
 	"database/sql"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain.Role, error) {
+func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain.Role, apperrors.ApplicationError) {
 	row, err := r.executeGetQuery(ctx, filters)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, err)
 	}
 
 	var (
@@ -19,7 +21,10 @@ func (r *repository) Get(ctx context.Context, filters GetFilterOptions) (*domain
 
 	err = row.Scan(&id, &name)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, err)
 	}
 
 	return &domain.Role{

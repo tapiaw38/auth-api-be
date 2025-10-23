@@ -36,11 +36,11 @@ func NewRequestResetPasswordUsecase(contextFactory appcontext.Factory) RequestRe
 
 func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string) (*RequestResetPasswordOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
-	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: email,
 	})
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, err)
+	if appErr != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, appErr)
 	}
 
 	if user == nil {
@@ -57,7 +57,7 @@ func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string)
 	user.PasswordResetToken = &token
 	user.PasswordResetTokenExpiry = &tokenExpiry
 
-	if _, err = app.Repositories.User.Update(ctx, user.ID, user); err != nil {
+	if _, err := app.Repositories.User.Update(ctx, user.ID, user); err != nil {
 		return nil, apperrors.NewApplicationError(mappings.UserRequestResetPasswordUpdateError, err)
 	}
 
@@ -71,7 +71,7 @@ func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string)
 		},
 	}
 
-	if err = app.Publisher.Publish(queue.TopicSendEmail, emailResetPassword); err != nil {
+	if err := app.Publisher.Publish(queue.TopicSendEmail, emailResetPassword); err != nil {
 		return nil, apperrors.NewApplicationError(mappings.UserRequestResetPasswordEmailSendError, err)
 	}
 

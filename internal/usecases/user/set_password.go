@@ -8,11 +8,13 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	SetPasswordUsecase interface {
-		Execute(context.Context, SetPasswordInput) error
+		Execute(context.Context, SetPasswordInput) apperrors.ApplicationError
 	}
 
 	setPasswordUsecase struct {
@@ -31,36 +33,39 @@ func NewSetPasswordUsecase(contextFactory appcontext.Factory) SetPasswordUsecase
 	}
 }
 
-func (u *setPasswordUsecase) Execute(ctx context.Context, input SetPasswordInput) error {
+func (u *setPasswordUsecase) Execute(ctx context.Context, input SetPasswordInput) apperrors.ApplicationError {
 	app := u.contextFactory()
 
-	user, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Username: input.Username,
 	})
-	if err != nil {
-		return err
+	if appErr != nil {
+		return appErr
 	}
 
 	if user == nil {
-		return errors.New("user not found")
+		return apperrors.NewApplicationError(mappings.UserGetNotFoundError, errors.New("user not found"))
 	}
 
 	if user.AuthMethod != string(domain.AuthMethodGoogle) {
-		return errors.New("only SSO users can set initial password")
+		return apperrors.NewApplicationError(mappings.UserSetPasswordNotSSOUserError, errors.New("only SSO users can set initial password"))
 	}
 
 	if err := auth.ValidatePasswordStrength(input.NewPassword); err != nil {
-		return err
+		return apperrors.NewApplicationError(mappings.UserSetPasswordWeakPasswordError, err)
 	}
 
 	hashedPassword, err := auth.HashedPassword(input.NewPassword)
 	if err != nil {
-		return err
+		return apperrors.NewApplicationError(mappings.UserSetPasswordUpdateError, err)
 	}
 
 	user.Password = string(hashedPassword)
 	user.AuthMethod = string(domain.AuthMethodHybrid)
 
-	_, err = app.Repositories.User.Update(ctx, user.ID, user)
-	return err
+	if _, appErr = app.Repositories.User.Update(ctx, user.ID, user); appErr != nil {
+		return appErr
+	}
+
+	return nil
 }

@@ -6,23 +6,26 @@ import (
 	"time"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Update(ctx context.Context, id string, user *domain.User) (string, error) {
+func (r *repository) Update(ctx context.Context, id string, user *domain.User) (string, apperrors.ApplicationError) {
 	row, err := r.executeUpdateQuery(ctx, id, user)
 	if err != nil {
 		return "", err
 	}
 
 	var updatedID string
-	if err := row.Scan(&updatedID); err != nil {
-		return "", err
+	err2 := row.Scan(&updatedID)
+	if err2 != nil {
+		return "", apperrors.NewApplicationError(mappings.UserUpdateQueryError, err2)
 	}
 
 	return updatedID, nil
 }
 
-func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *domain.User) (*sql.Row, error) {
+func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *domain.User) (*sql.Row, apperrors.ApplicationError) {
 	query := `UPDATE users
 		SET
 			first_name = COALESCE($1, first_name),
@@ -99,7 +102,7 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 
 	row := r.db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
-		return nil, row.Err()
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateQueryError, row.Err())
 	}
 
 	return row, nil

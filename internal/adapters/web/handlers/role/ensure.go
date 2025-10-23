@@ -10,11 +10,9 @@ import (
 
 func NewEnsureHandler(usecase role.EnsureUseCase) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := usecase.Execute(c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		if appErr := usecase.Execute(c); appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

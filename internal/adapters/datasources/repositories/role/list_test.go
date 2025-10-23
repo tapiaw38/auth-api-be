@@ -187,7 +187,7 @@ func TestRepository_List(t *testing.T) {
 			},
 			expectedRoles: nil,
 			expectedError: true,
-			errorMsg:      "sql: connection is already closed",
+			errorMsg:      "failed to retrieve role list",
 		},
 		{
 			name: "query execution error",
@@ -201,7 +201,7 @@ func TestRepository_List(t *testing.T) {
 			},
 			expectedRoles: nil,
 			expectedError: true,
-			errorMsg:      "expected a connection to be available",
+			errorMsg:      "failed to retrieve role list",
 		},
 		{
 			name:    "scan error - wrong number of columns",
@@ -271,17 +271,17 @@ func TestRepository_List(t *testing.T) {
 			ctx := context.Background()
 
 			// Act
-			roles, err := repo.List(ctx, tt.filters)
+			roles, appErr := repo.List(ctx, tt.filters)
 
 			// Assert
 			if tt.expectedError {
-				assert.Error(t, err)
+				assert.Error(t, appErr)
 				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
+					assert.Contains(t, appErr.Message(), tt.errorMsg)
 				}
 				assert.Nil(t, roles)
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, appErr)
 				if tt.expectedRoles == nil {
 					assert.Nil(t, roles)
 				} else {

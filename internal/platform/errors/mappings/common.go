@@ -3,7 +3,6 @@ package mappings
 import "net/http"
 
 var (
-	// Common validation errors
 	RequestBodyParsingError = ErrorDetails{
 		"common:request-body-parsing-error",
 		http.StatusBadRequest,
@@ -16,7 +15,6 @@ var (
 		"invalid request parameters",
 	}
 
-	// Database errors
 	DatabaseConnectionError = ErrorDetails{
 		"common:database-connection-error",
 		http.StatusInternalServerError,
@@ -29,14 +27,12 @@ var (
 		"database query error",
 	}
 
-	// External service errors
 	ExternalServiceError = ErrorDetails{
 		"common:external-service-error",
 		http.StatusInternalServerError,
 		"external service unavailable",
 	}
 
-	// Generic errors
 	InternalServerError = ErrorDetails{
 		"common:internal-server-error",
 		http.StatusInternalServerError,

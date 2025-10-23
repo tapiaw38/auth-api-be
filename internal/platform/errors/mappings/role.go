@@ -3,7 +3,6 @@ package mappings
 import "net/http"
 
 var (
-	// Create role errors
 	RoleCreateNameRequiredError = ErrorDetails{
 		"role:create:name-required",
 		http.StatusBadRequest,
@@ -28,7 +27,6 @@ var (
 		"role with this name already exists",
 	}
 
-	// Get role errors
 	RoleGetNotFoundError = ErrorDetails{
 		"role:get:not-found",
 		http.StatusNotFound,
@@ -41,7 +39,18 @@ var (
 		"failed to retrieve role information",
 	}
 
-	// Update role errors
+	RoleUpdateIDRequiredError = ErrorDetails{
+		"role:update:id-required",
+		http.StatusBadRequest,
+		"role ID is required",
+	}
+
+	RoleUpdateNameRequiredError = ErrorDetails{
+		"role:update:name-required",
+		http.StatusBadRequest,
+		"role name is required",
+	}
+
 	RoleUpdateNotFoundError = ErrorDetails{
 		"role:update:not-found",
 		http.StatusNotFound,
@@ -60,7 +69,12 @@ var (
 		"invalid role name",
 	}
 
-	// Delete role errors
+	RoleDeleteIDRequiredError = ErrorDetails{
+		"role:delete:id-required",
+		http.StatusBadRequest,
+		"role ID is required",
+	}
+
 	RoleDeleteNotFoundError = ErrorDetails{
 		"role:delete:not-found",
 		http.StatusNotFound,
@@ -79,14 +93,12 @@ var (
 		"cannot delete role that is assigned to users",
 	}
 
-	// List roles errors
 	RoleListQueryError = ErrorDetails{
 		"role:list:query-error",
 		http.StatusInternalServerError,
 		"failed to retrieve role list",
 	}
 
-	// Ensure role errors
 	RoleEnsureDefaultRoleNotFoundError = ErrorDetails{
 		"role:ensure:default-role-not-found",
 		http.StatusInternalServerError,
