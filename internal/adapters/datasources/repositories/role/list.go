@@ -5,12 +5,14 @@ import (
 	"database/sql"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]domain.Role, error) {
+func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]domain.Role, apperrors.ApplicationError) {
 	rows, err := r.executeListQuery(ctx, filters)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.RoleListQueryError, err)
 	}
 
 	defer rows.Close()
@@ -23,7 +25,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]dom
 
 		err = rows.Scan(&id, &name)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewApplicationError(mappings.RoleListQueryError, err)
 		}
 
 		roles = append(roles, domain.Role{

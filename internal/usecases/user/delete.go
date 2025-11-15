@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	DeleteUsecase interface {
-		Execute(context.Context, string) (string, error)
+		Execute(context.Context, string) apperrors.ApplicationError
 	}
 
 	deleteUsecase struct {
@@ -22,13 +24,17 @@ func NewDeleteUsecase(contextFactory appcontext.Factory) DeleteUsecase {
 	}
 }
 
-func (u *deleteUsecase) Execute(ctx context.Context, id string) (string, error) {
+func (u *deleteUsecase) Execute(ctx context.Context, id string) apperrors.ApplicationError {
 	app := u.contextFactory()
 
-	err := app.Repositories.User.Delete(ctx, id)
-	if err != nil {
-		return "", err
+	if id == "" {
+		return apperrors.NewApplicationError(mappings.UserDeleteNotFoundError, nil)
 	}
 
-	return id, nil
+	appErr := app.Repositories.User.Delete(ctx, id)
+	if appErr != nil {
+		return appErr
+	}
+
+	return nil
 }

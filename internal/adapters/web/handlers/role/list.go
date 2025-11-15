@@ -11,11 +11,10 @@ import (
 func NewListHandler(usecase role.ListUsecase) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		filter := parseListFilter(c.Request.URL.Query())
-		output, err := usecase.Execute(c, filter)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		output, appErr := usecase.Execute(c, filter)
+		if appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

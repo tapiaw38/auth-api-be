@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	mock_user "github.com/tapiaw38/auth-api-be/internal/usecases/user/mocks"
 	"go.uber.org/mock/gomock"
@@ -28,7 +30,7 @@ func TestMeHandler(t *testing.T) {
 		userID             string
 		prepare            func(f *fields)
 		expectedStatusCode int
-		expectedErr        error
+		expectedErr        apperrors.ApplicationError
 	}{
 		"when getting current user successfully": {
 			userID: "johndoe",
@@ -109,30 +111,28 @@ func TestMeHandler(t *testing.T) {
 			prepare: func(f *fields) {
 				f.usecase.EXPECT().Execute(gomock.Any(), usecase.GetFilterOptions{
 					Username: "erroruser",
-				}).Return(nil, errors.New("database connection error"))
+				}).Return(nil, apperrors.NewApplicationError(mappings.UserGetQueryError, errors.New("database connection error")))
 			},
 			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("database connection error"),
+			expectedErr:        apperrors.NewApplicationError(mappings.UserGetQueryError, errors.New("database connection error")),
 		},
 		"when user not found": {
 			userID: "nonexistent",
 			prepare: func(f *fields) {
 				f.usecase.EXPECT().Execute(gomock.Any(), usecase.GetFilterOptions{
 					Username: "nonexistent",
-				}).Return(nil, errors.New("user not found"))
+				}).Return(nil, apperrors.NewApplicationError(mappings.UserGetNotFoundError, errors.New("user not found")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("user not found"),
+			expectedStatusCode: http.StatusNotFound,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserGetNotFoundError, errors.New("user not found")),
 		},
 		"when user ID is empty": {
 			userID: "",
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), usecase.GetFilterOptions{
-					Username: "",
-				}).Return(nil, errors.New("user not found"))
+				// Handler validates userID before calling usecase, so no usecase call expected
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("user not found"),
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedErr:        apperrors.NewApplicationError(mappings.AuthUnauthorizedError, nil),
 		},
 	}
 
@@ -163,7 +163,7 @@ func TestMeHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedStatusCode, w.Code)
 
 			if tc.expectedErr != nil {
-				assert.Contains(t, w.Body.String(), tc.expectedErr.Error())
+				assert.Contains(t, w.Body.String(), tc.expectedErr.Message())
 			}
 		})
 	}

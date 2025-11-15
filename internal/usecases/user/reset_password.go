@@ -2,17 +2,18 @@ package user
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	ResetPasswordUsecase interface {
-		Execute(context.Context, ResetPasswordInput) (*ResetPasswordOutput, error)
+		Execute(context.Context, ResetPasswordInput) (*ResetPasswordOutput, apperrors.ApplicationError)
 	}
 
 	resetPasswordUsecase struct {
@@ -35,48 +36,48 @@ func NewResetPasswordUsecase(contextFactory appcontext.Factory) ResetPasswordUse
 	}
 }
 
-func (u *resetPasswordUsecase) Execute(ctx context.Context, input ResetPasswordInput) (*ResetPasswordOutput, error) {
+func (u *resetPasswordUsecase) Execute(ctx context.Context, input ResetPasswordInput) (*ResetPasswordOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
-	user, err := app.Repositories.User.Get(
+	user, appErr := app.Repositories.User.Get(
 		ctx,
 		user_repo.GetFilterOptions{
 			PasswordResetToken: input.Token,
 		},
 	)
-	if err != nil {
-		return nil, errors.New("token expired or invalid")
+	if appErr != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil)
 	}
 
 	if user == nil {
-		return nil, errors.New("token expired or invalid")
+		return nil, apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil)
 	}
 
 	if time.Now().After(*user.PasswordResetTokenExpiry) {
-		return nil, errors.New("token expired or invalid")
+		return nil, apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil)
 	}
 
 	if err := auth.ValidatePasswordStrength(input.Password); err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, err)
 	}
 
 	hashedPassword, err := auth.HashedPassword(input.Password)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterPasswordHashError, err)
 	}
 
 	user.Password = string(hashedPassword)
 
-	if _, err = app.Repositories.User.Update(
+	if _, appErr := app.Repositories.User.Update(
 		ctx,
 		user.ID,
 		user,
-	); err != nil {
-		return nil, err
+	); appErr != nil {
+		return nil, appErr
 	}
 
-	if err := app.Repositories.User.InvalidatePasswordResetToken(ctx, user.ID); err != nil {
-		return nil, err
+	if appErr := app.Repositories.User.InvalidatePasswordResetToken(ctx, user.ID); appErr != nil {
+		return nil, appErr
 	}
 
 	return &ResetPasswordOutput{

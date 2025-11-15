@@ -2,7 +2,6 @@ package role_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +10,8 @@ import (
 	mock_role "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	"go.uber.org/mock/gomock"
 )
@@ -97,10 +98,10 @@ func TestListUsecase_Execute(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().
 					List(gomock.Any(), roleRepo.ListFilterOptions{}).
-					Return(nil, errors.New("database connection error"))
+					Return(nil, apperrors.NewApplicationError(mappings.RoleListQueryError, nil))
 			},
 			expected:    nil,
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleListQueryError, nil),
 		},
 		"when listing superadmin roles": {
 			input: usecase.ListFilterOptions{

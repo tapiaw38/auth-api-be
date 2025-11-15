@@ -12,6 +12,8 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	"go.uber.org/mock/gomock"
 )
@@ -27,7 +29,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 		input       usecase.ChangePasswordInput
 		username    string
 		prepare     func(f *fields)
-		expectedErr error
+		expectedErr apperrors.ApplicationError
 	}{
 		"successful password change": {
 			input: usecase.ChangePasswordInput{
@@ -49,9 +51,9 @@ func TestChangePasswordUsecase(t *testing.T) {
 			input:    usecase.ChangePasswordInput{},
 			username: "non-existent-user",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "non-existent-user"}).Return(nil, errors.New("not found"))
+				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "non-existent-user"}).Return(nil, apperrors.NewApplicationError(mappings.UserGetQueryError, nil))
 			},
-			expectedErr: errors.New("not found"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserGetQueryError, nil),
 		},
 		"user not found - nil user": {
 			input:    usecase.ChangePasswordInput{},
@@ -59,7 +61,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{Username: "non-existent-user"}).Return(nil, nil)
 			},
-			expectedErr: errors.New("user not found"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserGetNotFoundError, nil),
 		},
 		"incorrect old password": {
 			input: usecase.ChangePasswordInput{
@@ -74,7 +76,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("invalid credentials"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordInvalidOldPasswordError, errors.New("invalid credentials")),
 		},
 		"new password same as old password": {
 			input: usecase.ChangePasswordInput{
@@ -89,7 +91,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("new password must be different from current password"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordSamePasswordError, nil),
 		},
 		"new password too short": {
 			input: usecase.ChangePasswordInput{
@@ -104,7 +106,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("password must be at least 8 characters long"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordWeakPasswordError, errors.New("password must be at least 8 characters long")),
 		},
 		"new password missing uppercase": {
 			input: usecase.ChangePasswordInput{
@@ -119,7 +121,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("password must contain at least one uppercase letter"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordWeakPasswordError, errors.New("password must contain at least one uppercase letter")),
 		},
 		"new password missing lowercase": {
 			input: usecase.ChangePasswordInput{
@@ -134,7 +136,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("password must contain at least one lowercase letter"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordWeakPasswordError, errors.New("password must contain at least one lowercase letter")),
 		},
 		"new password missing number": {
 			input: usecase.ChangePasswordInput{
@@ -149,7 +151,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("password must contain at least one number"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordWeakPasswordError, errors.New("password must contain at least one number")),
 		},
 		"new password missing special character": {
 			input: usecase.ChangePasswordInput{
@@ -164,7 +166,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 			},
-			expectedErr: errors.New("password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserChangePasswordWeakPasswordError, errors.New("password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")),
 		},
 	}
 

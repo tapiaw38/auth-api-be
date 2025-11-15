@@ -20,6 +20,7 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 	routeGroup.POST("auth/register", user.NewRegisterHandler(useCases.User.RegisterUsecase))
 	routeGroup.POST("auth/login", user.NewLoginHandler(useCases.User.LoginUsecase))
 	routeGroup.GET("auth/verify-email", user.NewVerifyEmailHandler(useCases.User.VerifyEmailUsecase))
+	routeGroup.POST("auth/request-reset-password", user.NewRequestResetPasswordHandler(useCases.User.RequestResetPasswordUsecase))
 	routeGroup.POST("auth/reset-password", user.NewResetPasswordHandler(useCases.User.ResetPasswordUsecase))
 	routeGroup.POST("role/ensure", role.NewEnsureHandler(useCases.Role.EnsureUsecase))
 

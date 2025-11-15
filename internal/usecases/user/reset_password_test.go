@@ -2,7 +2,6 @@ package user_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	"go.uber.org/mock/gomock"
 )
@@ -31,7 +32,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 		token       string
 		password    string
 		prepare     func(f *fields)
-		expectedErr error
+		expectedErr apperrors.ApplicationError
 	}{
 		"successful password reset": {
 			token:    "valid-token",
@@ -54,9 +55,9 @@ func TestResetPasswordUsecase(t *testing.T) {
 			token:    "invalid-token",
 			password: "NewPassword123!",
 			prepare: func(f *fields) {
-				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "invalid-token"}).Return(nil, errors.New("user not found"))
+				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "invalid-token"}).Return(nil, apperrors.NewApplicationError(mappings.UserGetQueryError, nil))
 			},
-			expectedErr: errors.New("token expired or invalid"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil),
 		},
 		"invalid token - nil user": {
 			token:    "invalid-token2",
@@ -64,7 +65,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "invalid-token2"}).Return(nil, nil)
 			},
-			expectedErr: errors.New("token expired or invalid"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil),
 		},
 		"expired token": {
 			token:    "expired-token",
@@ -77,7 +78,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "expired-token"}).Return(user, nil)
 			},
-			expectedErr: errors.New("token expired or invalid"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserResetPasswordInvalidTokenError, nil),
 		},
 		"password update failure": {
 			token:    "valid-token-update-fail",
@@ -91,9 +92,9 @@ func TestResetPasswordUsecase(t *testing.T) {
 					PasswordResetTokenExpiry: &validTime,
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token-update-fail"}).Return(user, nil)
-				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("", errors.New("update failed"))
+				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("", apperrors.NewApplicationError(mappings.UserUpdateQueryError, nil))
 			},
-			expectedErr: errors.New("update failed"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserUpdateQueryError, nil),
 		},
 		"token invalidation failure": {
 			token:    "valid-token-invalidate-fail",
@@ -108,9 +109,9 @@ func TestResetPasswordUsecase(t *testing.T) {
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token-invalidate-fail"}).Return(user, nil)
 				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
-				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(errors.New("invalidation failed"))
+				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(apperrors.NewApplicationError(mappings.UserResetPasswordUpdateError, nil))
 			},
-			expectedErr: errors.New("invalidation failed"),
+			expectedErr: apperrors.NewApplicationError(mappings.UserResetPasswordUpdateError, nil),
 		},
 	}
 

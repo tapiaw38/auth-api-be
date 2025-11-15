@@ -92,12 +92,12 @@ func (r *RabbitMQ) Publish(topic Topic, data interface{}) error {
 	}
 
 	q, err := pub.ch.QueueDeclare(
-		string(pub.topic), // Asegúrate de que este nombre coincida con el tema
-		false,             // Durable
-		false,             // Auto-delete
-		false,             // Exclusive
-		false,             // No-wait
-		nil,               // Arguments
+		string(pub.topic),
+		false, // Durable
+		false, // Auto-delete
+		false, // Exclusive
+		false, // No-wait
+		nil,   // Arguments
 	)
 	if err != nil {
 		return fmt.Errorf("queue declare failed: %w", err)

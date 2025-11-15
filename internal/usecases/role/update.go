@@ -2,16 +2,17 @@ package role
 
 import (
 	"context"
-	"errors"
 
 	roleRepo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	UpdateUsecase interface {
-		Execute(context.Context, string, UpdateInput) (*UpdateOutput, error)
+		Execute(context.Context, string, UpdateInput) (*UpdateOutput, apperrors.ApplicationError)
 	}
 
 	updateUsecase struct {
@@ -33,29 +34,29 @@ func NewUpdateUsecase(contextFactory appcontext.Factory) UpdateUsecase {
 	}
 }
 
-func (u *updateUsecase) Execute(ctx context.Context, id string, input UpdateInput) (*UpdateOutput, error) {
+func (u *updateUsecase) Execute(ctx context.Context, id string, input UpdateInput) (*UpdateOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
 	if id == "" {
-		return nil, errors.New("role ID is required")
+		return nil, apperrors.NewApplicationError(mappings.RoleUpdateIDRequiredError, nil)
 	}
 	if input.Name == "" {
-		return nil, errors.New("role name is required")
+		return nil, apperrors.NewApplicationError(mappings.RoleUpdateNameRequiredError, nil)
 	}
 
 	roleName := domain.RoleName(input.Name)
 	switch roleName {
 	case domain.RoleSuperAdmin, domain.RoleAdmin, domain.RoleUser:
 	default:
-		return nil, errors.New("invalid role name")
+		return nil, apperrors.NewApplicationError(mappings.RoleUpdateInvalidNameError, nil)
 	}
 
-	existingRole, err := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
-	if err != nil {
-		return nil, err
+	existingRole, appErr := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
+	if appErr != nil {
+		return nil, appErr
 	}
 	if existingRole == nil {
-		return nil, errors.New("role not found")
+		return nil, apperrors.NewApplicationError(mappings.RoleUpdateNotFoundError, nil)
 	}
 
 	role := domain.Role{
@@ -63,14 +64,14 @@ func (u *updateUsecase) Execute(ctx context.Context, id string, input UpdateInpu
 		Name: roleName,
 	}
 
-	updatedID, err := app.Repositories.Role.Update(ctx, id, &role)
-	if err != nil {
-		return nil, err
+	updatedID, appErr := app.Repositories.Role.Update(ctx, id, &role)
+	if appErr != nil {
+		return nil, appErr
 	}
 
-	updatedRole, err := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: updatedID})
-	if err != nil {
-		return nil, err
+	updatedRole, appErr := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: updatedID})
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return &UpdateOutput{

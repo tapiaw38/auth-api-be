@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 func TestRepository_Get(t *testing.T) {
@@ -53,7 +55,7 @@ func TestRepository_Get(t *testing.T) {
 		filters   user.GetFilterOptions
 		prepare   func(f *fields)
 		expect    *domain.User
-		expectErr error
+		expectErr apperrors.ApplicationError
 	}{
 		"when getting user by ID successfully": {
 			filters: user.GetFilterOptions{
@@ -351,7 +353,10 @@ func TestRepository_Get(t *testing.T) {
 				f.mock.ExpectQuery("SELECT").WithArgs("user-123").
 					WillReturnError(errors.New("database connection error"))
 			},
-			expectErr: errors.New("database connection error"),
+			expectErr: apperrors.NewApplicationError(
+				mappings.UserGetQueryError,
+				errors.New("database connection error"),
+			),
 		},
 		"when roles JSON parsing fails": {
 			filters: user.GetFilterOptions{
@@ -384,7 +389,10 @@ func TestRepository_Get(t *testing.T) {
 				)
 				f.mock.ExpectQuery("SELECT").WithArgs("user-123").WillReturnRows(rows)
 			},
-			expectErr: errors.New("invalid character 'i' looking for beginning of value"),
+			expectErr: apperrors.NewApplicationError(
+				mappings.UserGetQueryError,
+				errors.New("invalid character 'i' looking for beginning of value"),
+			),
 		},
 	}
 
@@ -401,19 +409,15 @@ func TestRepository_Get(t *testing.T) {
 			}
 
 			repository := user.NewRepository(db)
-			result, err := repository.Get(context.Background(), tt.filters)
+			result, appErr := repository.Get(context.Background(), tt.filters)
 
 			assert.Equal(t, tt.expect, result)
 
 			if tt.expectErr != nil {
-				assert.Error(t, err)
-				if tt.expectErr.Error() == "invalid character 'i' looking for beginning of value" {
-					assert.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
-				} else {
-					assert.Equal(t, tt.expectErr, err)
-				}
+				assert.Error(t, appErr)
+				assert.Contains(t, appErr.Message(), tt.expectErr.Message())
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, appErr)
 			}
 		})
 	}

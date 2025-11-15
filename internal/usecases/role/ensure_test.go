@@ -2,7 +2,6 @@ package role_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +10,8 @@ import (
 	mock_role "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	"go.uber.org/mock/gomock"
 )
@@ -133,9 +134,9 @@ func TestEnsureUsecase_Execute(t *testing.T) {
 			prepare: func(f *fields) {
 				f.repository.EXPECT().
 					Get(gomock.Any(), roleRepo.GetFilterOptions{Name: "superadmin"}).
-					Return(nil, errors.New("database connection error"))
+					Return(nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, nil))
 			},
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleGetQueryError, nil),
 		},
 		"when repository create returns error": {
 			prepare: func(f *fields) {
@@ -152,15 +153,15 @@ func TestEnsureUsecase_Execute(t *testing.T) {
 					Return(nil, nil)
 				f.repository.EXPECT().
 					Create(gomock.Any(), gomock.AssignableToTypeOf(domain.Role{})).
-					DoAndReturn(func(ctx context.Context, r domain.Role) (string, error) {
+					DoAndReturn(func(ctx context.Context, r domain.Role) (string, apperrors.ApplicationError) {
 						// Verify that the role name is correct
 						if r.Name != domain.RoleAdmin {
 							t.Errorf("Expected admin role, got %s", r.Name)
 						}
-						return "", errors.New("database connection error")
+						return "", apperrors.NewApplicationError(mappings.RoleCreateQueryError, nil)
 					})
 			},
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleCreateQueryError, nil),
 		},
 	}
 

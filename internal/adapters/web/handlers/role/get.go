@@ -20,11 +20,10 @@ func NewGetHandler(usecase role.GetUsecase) gin.HandlerFunc {
 			filters.Name = name
 		}
 
-		output, err := usecase.Execute(c, filters)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
+		output, appErr := usecase.Execute(c, filters)
+		if appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

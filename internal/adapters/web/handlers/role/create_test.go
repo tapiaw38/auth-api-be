@@ -2,15 +2,18 @@ package role_test
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
-	roleUsecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	role_handler "github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/role"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+	roleUsecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
+	mock_role "github.com/tapiaw38/auth-api-be/internal/usecases/role/mocks"
 	"go.uber.org/mock/gomock"
 )
 
@@ -52,22 +55,22 @@ func TestCreateHandler(t *testing.T) {
 		"when create usecase returns error": {
 			body: `{"name":"admin"}`,
 			setupUsecase: func(mockUsecase *mock_role.MockCreateUsecase) {
-				mockUsecase.EXPECT().Execute(gomock.Any(), roleUsecase.CreateInput{Name: "admin"}).Return(nil, assert.AnError)
+				mockUsecase.EXPECT().Execute(gomock.Any(), roleUsecase.CreateInput{Name: "admin"}).Return(nil, apperrors.NewApplicationError(mappings.RoleCreateQueryError, errors.New("database error")))
 			},
 			expectedCode: 500,
-			expectedBody: `{"message":"` + assert.AnError.Error() + `"}`,
+			expectedBody: `{"code":"role:create:query-error","message":"failed to create role"}`,
 		},
 		"when request body is invalid": {
 			body:         `{"invalid":}`,
 			setupUsecase: func(mockUsecase *mock_role.MockCreateUsecase) {},
 			expectedCode: 400,
-			expectedBody: `{"message":"Invalid request body"}`,
+			expectedBody: `{"code":"common:request-body-parsing-error","message":"invalid request body format"}`,
 		},
 		"when name is missing": {
 			body:         `{}`,
 			setupUsecase: func(mockUsecase *mock_role.MockCreateUsecase) {},
 			expectedCode: 400,
-			expectedBody: `{"message":"Invalid request body"}`,
+			expectedBody: `{"code":"common:request-body-parsing-error","message":"invalid request body format"}`,
 		},
 	}
 
@@ -93,12 +96,7 @@ func TestCreateHandler(t *testing.T) {
 
 			assert.Equal(t, tc.expectedCode, w.Code)
 			if tc.expectedBody != "" {
-				if tc.expectedCode == 400 {
-					// For 400 errors, we want to check that the response contains the error message
-					assert.Contains(t, w.Body.String(), "Invalid request body")
-				} else {
-					assert.Contains(t, w.Body.String(), tc.expectedBody)
-				}
+				assert.JSONEq(t, tc.expectedBody, w.Body.String())
 			}
 		})
 	}

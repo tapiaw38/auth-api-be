@@ -3,16 +3,19 @@ package user
 import (
 	"context"
 	"database/sql"
+
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Delete(ctx context.Context, id string) error {
+func (r *repository) Delete(ctx context.Context, id string) apperrors.ApplicationError {
 	result, err := r.executeDeleteQuery(ctx, id)
 	if err != nil {
-		return err
+		return apperrors.NewApplicationError(mappings.UserDeleteQueryError, err)
 	}
 
 	if _, err := result.RowsAffected(); err != nil {
-		return err
+		return apperrors.NewApplicationError(mappings.UserDeleteQueryError, err)
 	}
 
 	return nil

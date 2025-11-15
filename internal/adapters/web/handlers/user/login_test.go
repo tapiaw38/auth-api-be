@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	mock_usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user/mocks"
 	"go.uber.org/mock/gomock"
@@ -88,10 +90,10 @@ func TestLoginHandler(t *testing.T) {
 				Password: "wrongpassword",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("invalid credentials"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserLoginInvalidCredentialsError, errors.New("invalid credentials")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("invalid credentials"),
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserLoginInvalidCredentialsError, errors.New("invalid credentials")),
 		},
 		"when usecase returns an error - user not found": {
 			body: usecase.LoginInput{
@@ -99,10 +101,10 @@ func TestLoginHandler(t *testing.T) {
 				Password: "Password123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("user not found"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("user not found"),
+			expectedStatusCode: http.StatusNotFound,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found")),
 		},
 		"when usecase returns an error - user is not active": {
 			body: usecase.LoginInput{
@@ -110,10 +112,10 @@ func TestLoginHandler(t *testing.T) {
 				Password: "Password123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("user is not active"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserLoginUserNotActiveError, errors.New("user is not active")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("user is not active"),
+			expectedStatusCode: http.StatusForbidden,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserLoginUserNotActiveError, errors.New("user is not active")),
 		},
 		"when usecase returns an error - SSO authentication required": {
 			body: usecase.LoginInput{
@@ -121,10 +123,10 @@ func TestLoginHandler(t *testing.T) {
 				Password: "Password123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("this account uses SSO authentication. Please use Google login"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserLoginSSOAuthMethodError, errors.New("this account uses SSO authentication")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("this account uses SSO authentication. Please use Google login"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserLoginSSOAuthMethodError, errors.New("this account uses SSO authentication")),
 		},
 		"when request body is invalid": {
 			body:               "invalid body",

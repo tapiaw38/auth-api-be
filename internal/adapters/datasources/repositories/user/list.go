@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*domain.User, error) {
+func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*domain.User, apperrors.ApplicationError) {
 	rows, err := r.executeListQuery(ctx, filters)
 	if err != nil {
 		return nil, err
@@ -30,7 +32,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 		var tokenVersion uint
 		var rolesJSON json.RawMessage
 
-		err = rows.Scan(
+		err2 := rows.Scan(
 			&id,
 			&firstName,
 			&lastName,
@@ -52,13 +54,13 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 			&updatedAt,
 			&rolesJSON,
 		)
-		if err != nil {
-			return nil, err
+		if err2 != nil {
+			return nil, apperrors.NewApplicationError(mappings.UserListQueryError, err2)
 		}
 
-		roles, err := unmarshalRoles(rolesJSON)
-		if err != nil {
-			return nil, err
+		roles, err3 := unmarshalRoles(rolesJSON)
+		if err3 != nil {
+			return nil, apperrors.NewApplicationError(mappings.UserListQueryError, err3)
 		}
 
 		users = append(users, unmarshalUser(
@@ -88,7 +90,7 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 	return users, nil
 }
 
-func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOptions) (*sql.Rows, error) {
+func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOptions) (*sql.Rows, apperrors.ApplicationError) {
 	query := `SELECT
                 u.id, u.first_name, u.last_name, u.username,
                 u.email, u.password, u.phone_number, u.picture, u.address,
@@ -150,18 +152,18 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 		argIndex++
 	}
 
-	query += ` GROUP BY 
-		u.id, u.first_name, u.last_name, 
-		u.username, u.email, u.password, 
-		u.phone_number, u.picture, u.address, 
-		u.is_active, u.verified_email, 
-		u.verified_email_token, u.verified_email_token_expiry, 
-		u.password_reset_token, u.password_reset_token_expiry, 
+	query += ` GROUP BY
+		u.id, u.first_name, u.last_name,
+		u.username, u.email, u.password,
+		u.phone_number, u.picture, u.address,
+		u.is_active, u.verified_email,
+		u.verified_email_token, u.verified_email_token_expiry,
+		u.password_reset_token, u.password_reset_token_expiry,
 		u.created_at, u.updated_at`
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserListQueryError, err)
 	}
 
 	return rows, nil

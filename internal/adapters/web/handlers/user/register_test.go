@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	handler "github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user"
 	mock_usecase "github.com/tapiaw38/auth-api-be/internal/usecases/user/mocks"
 	"go.uber.org/mock/gomock"
@@ -26,7 +28,7 @@ func TestRegisterHandler(t *testing.T) {
 		prepare            func(f *fields)
 		expectedStatusCode int
 		expectedResponse   *usecase.RegisterOutput
-		expectedErr        error
+		expectedErr        apperrors.ApplicationError
 	}{
 		"when registration is successful": {
 			body: map[string]string{
@@ -66,10 +68,10 @@ func TestRegisterHandler(t *testing.T) {
 				"password":   "SecurePassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("email already exists"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterEmailInUseError, errors.New("email already exists")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("email already exists"),
+			expectedStatusCode: http.StatusConflict,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterEmailInUseError, errors.New("email already exists")),
 		},
 		"when usecase returns an error - username already exists": {
 			body: map[string]string{
@@ -80,10 +82,10 @@ func TestRegisterHandler(t *testing.T) {
 				"password":   "SecurePassword123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("username already exists"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, errors.New("username already exists")))
 			},
 			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("username already exists"),
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, errors.New("username already exists")),
 		},
 		"when usecase returns an error - weak password": {
 			body: map[string]string{
@@ -94,10 +96,10 @@ func TestRegisterHandler(t *testing.T) {
 				"password":   "weak",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("password must be at least 8 characters long"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must be at least 8 characters long")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("password must be at least 8 characters long"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must be at least 8 characters long")),
 		},
 		"when usecase returns an error - missing uppercase": {
 			body: map[string]string{
@@ -108,10 +110,10 @@ func TestRegisterHandler(t *testing.T) {
 				"password":   "password123!",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("password must contain at least one uppercase letter"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must contain at least one uppercase letter")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("password must contain at least one uppercase letter"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must contain at least one uppercase letter")),
 		},
 		"when usecase returns an error - missing special character": {
 			body: map[string]string{
@@ -122,10 +124,10 @@ func TestRegisterHandler(t *testing.T) {
 				"password":   "Password123",
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("password must contain at least one special character"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, errors.New("password must contain at least one special character")),
 		},
 		"when request body is invalid": {
 			body:               "invalid body",
@@ -138,10 +140,10 @@ func TestRegisterHandler(t *testing.T) {
 				// Missing other required fields
 			},
 			prepare: func(f *fields) {
-				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, errors.New("validation error"))
+				f.usecase.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(nil, apperrors.NewApplicationError(mappings.UserRegisterInvalidInputError, errors.New("validation error")))
 			},
-			expectedStatusCode: http.StatusInternalServerError,
-			expectedErr:        errors.New("validation error"),
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErr:        apperrors.NewApplicationError(mappings.UserRegisterInvalidInputError, errors.New("validation error")),
 		},
 	}
 
@@ -181,7 +183,7 @@ func TestRegisterHandler(t *testing.T) {
 			}
 
 			if tc.expectedErr != nil {
-				assert.Contains(t, w.Body.String(), tc.expectedErr.Error())
+				assert.Contains(t, w.Body.String(), tc.expectedErr.Message())
 			}
 		})
 	}

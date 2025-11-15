@@ -2,16 +2,17 @@ package role
 
 import (
 	"context"
-	"errors"
 
 	roleRepo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
 type (
 	CreateUsecase interface {
-		Execute(context.Context, CreateInput) (*CreateOutput, error)
+		Execute(context.Context, CreateInput) (*CreateOutput, apperrors.ApplicationError)
 	}
 
 	createUsecase struct {
@@ -33,32 +34,32 @@ func NewCreateUsecase(contextFactory appcontext.Factory) CreateUsecase {
 	}
 }
 
-func (u *createUsecase) Execute(ctx context.Context, input CreateInput) (*CreateOutput, error) {
+func (u *createUsecase) Execute(ctx context.Context, input CreateInput) (*CreateOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
 	if input.Name == "" {
-		return nil, errors.New("role name is required")
+		return nil, apperrors.NewApplicationError(mappings.RoleCreateNameRequiredError, nil)
 	}
 
 	roleName := domain.RoleName(input.Name)
 	switch roleName {
 	case domain.RoleSuperAdmin, domain.RoleAdmin, domain.RoleUser:
 	default:
-		return nil, errors.New("invalid role name")
+		return nil, apperrors.NewApplicationError(mappings.RoleCreateInvalidNameError, nil)
 	}
 
 	role := domain.Role{
 		Name: roleName,
 	}
 
-	id, err := app.Repositories.Role.Create(ctx, role)
-	if err != nil {
-		return nil, err
+	id, appErr := app.Repositories.Role.Create(ctx, role)
+	if appErr != nil {
+		return nil, appErr
 	}
 
-	createdRole, err := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
-	if err != nil {
-		return nil, err
+	createdRole, appErr := app.Repositories.Role.Get(ctx, roleRepo.GetFilterOptions{ID: id})
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return &CreateOutput{

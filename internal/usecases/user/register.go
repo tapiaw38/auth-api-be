@@ -12,13 +12,15 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations/notification"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
 	"github.com/tapiaw38/auth-api-be/internal/platform/utils"
 )
 
 type (
 	RegisterUsecase interface {
-		Execute(context.Context, RegisterInput) (*RegisterOutput, error)
+		Execute(context.Context, RegisterInput) (*RegisterOutput, apperrors.ApplicationError)
 	}
 
 	registerUsecase struct {
@@ -44,23 +46,20 @@ func NewCreateUsecase(contextFactory appcontext.Factory) RegisterUsecase {
 	}
 }
 
-func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*RegisterOutput, error) {
+func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*RegisterOutput, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
-	// Validate first name and last name
 	if input.FirstName == "" {
-		return nil, errors.New("first name is required")
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterFirstNameRequiredError, errors.New("first name is required"))
 	}
 	if input.LastName == "" {
-		return nil, errors.New("last name is required")
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterLastNameRequiredError, errors.New("last name is required"))
 	}
 
-	// Validate email format
 	if err := auth.ValidateEmail(input.Email); err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterInvalidEmailError, err)
 	}
 
-	// Generate username automatically from first name, last name and random string
 	generatedUsername := auth.GenerateUsername(input.FirstName, input.LastName)
 
 	user := domain.User{
@@ -71,35 +70,33 @@ func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*Re
 		Password:  input.Password,
 	}
 
-	// Check if email already exists
-	existingUser, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	existingUser, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: user.Email,
 	})
-	if err != nil {
-		return nil, err
+	if appErr != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserGetQueryError, appErr)
 	}
 
 	if existingUser != nil {
-		return nil, errors.New("email already in use")
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterEmailInUseError, errors.New("email already in use"))
 	}
 
-	err = AddVerifiedEmailToken(&user)
-	if err != nil {
-		return nil, err
+	if err := AddVerifiedEmailToken(&user); err != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterTokenGenerationError, err)
 	}
 
 	if err := auth.ValidatePasswordStrength(user.Password); err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterWeakPasswordError, err)
 	}
 
 	hashedPassword, err := auth.HashedPassword(user.Password)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterPasswordHashError, err)
 	}
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterUUIDGenerationError, err)
 	}
 
 	user.ID = id.String()
@@ -110,28 +107,28 @@ func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*Re
 
 	userID, err := app.Repositories.User.Create(ctx, user)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, err)
 	}
 
-	defaultRole, err := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
+	defaultRole, appErr := app.Repositories.Role.Get(ctx, role_repo.GetFilterOptions{
 		Name: string(domain.RoleUser),
 	})
-	if err != nil {
-		return nil, err
+	if appErr != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterGetRoleError, appErr)
 	}
 
-	if _, err = app.Repositories.UserRole.Create(ctx, domain.UserRole{
+	if _, err := app.Repositories.UserRole.Create(ctx, domain.UserRole{
 		UserID: userID,
 		RoleID: defaultRole.ID,
 	}); err != nil {
-		return nil, err
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterAssignRoleError, err)
 	}
 
-	createdUser, err := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+	createdUser, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		ID: userID,
 	})
-	if err != nil {
-		return nil, err
+	if appErr != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterGetUserError, appErr)
 	}
 
 	emailConfirmation := notification.SendEmailInput{
@@ -144,8 +141,8 @@ func (u *registerUsecase) Execute(ctx context.Context, input RegisterInput) (*Re
 		},
 	}
 
-	if err = app.Publisher.Publish(queue.TopicSendEmail, emailConfirmation); err != nil {
-		return nil, err
+	if err := app.Publisher.Publish(queue.TopicSendEmail, emailConfirmation); err != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterEmailSendError, err)
 	}
 
 	return &RegisterOutput{

@@ -5,11 +5,12 @@ import (
 
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 )
 
 type (
 	ListUsecase interface {
-		Execute(context.Context, ListFilterOptions) ([]RoleOutputData, error)
+		Execute(context.Context, ListFilterOptions) ([]RoleOutputData, apperrors.ApplicationError)
 	}
 
 	listUsecase struct {
@@ -29,12 +30,12 @@ func NewListUsecase(contextFactory appcontext.Factory) ListUsecase {
 	}
 }
 
-func (u *listUsecase) Execute(ctx context.Context, filters ListFilterOptions) ([]RoleOutputData, error) {
+func (u *listUsecase) Execute(ctx context.Context, filters ListFilterOptions) ([]RoleOutputData, apperrors.ApplicationError) {
 	app := u.contextFactory()
 
-	roles, err := app.Repositories.Role.List(ctx, role.ListFilterOptions(filters))
-	if err != nil {
-		return nil, err
+	roles, appErr := app.Repositories.Role.List(ctx, role.ListFilterOptions(filters))
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	if roles == nil {

@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	"github.com/tapiaw38/auth-api-be/internal/usecases/user"
 )
 
@@ -16,7 +18,9 @@ func NewSetPasswordHandler(usecase user.SetPasswordUsecase) func(c *gin.Context)
 		var request SetPasswordRequest
 
 		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			appErr := apperrors.NewApplicationError(mappings.RequestBodyParsingError, err)
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 
@@ -27,8 +31,9 @@ func NewSetPasswordHandler(usecase user.SetPasswordUsecase) func(c *gin.Context)
 			NewPassword: request.NewPassword,
 		}
 
-		if err := usecase.Execute(c, input); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if appErr := usecase.Execute(c, input); appErr != nil {
+			appErr.Log(c)
+			c.JSON(appErr.StatusCode(), appErr)
 			return
 		}
 

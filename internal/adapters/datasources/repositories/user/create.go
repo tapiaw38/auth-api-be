@@ -6,24 +6,26 @@ import (
 	"time"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Create(ctx context.Context, user domain.User) (string, error) {
+func (r *repository) Create(ctx context.Context, user domain.User) (string, apperrors.ApplicationError) {
 	row, err := r.executeCreateQuery(ctx, user)
 	if err != nil {
 		return "", err
 	}
 
 	var id string
-	err = row.Scan(&id)
-	if err != nil {
-		return "", err
+	err2 := row.Scan(&id)
+	if err2 != nil {
+		return "", apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, err2)
 	}
 
 	return id, nil
 }
 
-func (r *repository) executeCreateQuery(ctx context.Context, user domain.User) (*sql.Row, error) {
+func (r *repository) executeCreateQuery(ctx context.Context, user domain.User) (*sql.Row, apperrors.ApplicationError) {
 	query := `INSERT INTO users (
 				id, first_name, last_name, username, email,
 				password, phone_number, picture, address,
@@ -56,7 +58,7 @@ func (r *repository) executeCreateQuery(ctx context.Context, user domain.User) (
 
 	row := r.db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
-		return nil, row.Err()
+		return nil, apperrors.NewApplicationError(mappings.UserRegisterCreateUserError, row.Err())
 	}
 
 	return row, nil

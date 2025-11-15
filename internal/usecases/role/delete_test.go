@@ -2,7 +2,6 @@ package role_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +10,8 @@ import (
 	mock_role "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 	usecase "github.com/tapiaw38/auth-api-be/internal/usecases/role"
 	"go.uber.org/mock/gomock"
 )
@@ -73,7 +74,7 @@ func TestDeleteUsecase_Execute(t *testing.T) {
 		"when deleting role with empty ID": {
 			id:      "",
 			prepare: func(f *fields) {},
-			expectedErr: errors.New("role ID is required"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleDeleteIDRequiredError, nil),
 		},
 		"when role does not exist": {
 			id: "non-existent-role",
@@ -82,16 +83,16 @@ func TestDeleteUsecase_Execute(t *testing.T) {
 					Get(gomock.Any(), roleRepo.GetFilterOptions{ID: "non-existent-role"}).
 					Return(nil, nil)
 			},
-			expectedErr: errors.New("role not found"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleDeleteNotFoundError, nil),
 		},
 		"when repository get returns error": {
 			id: "role-123",
 			prepare: func(f *fields) {
 				f.repository.EXPECT().
 					Get(gomock.Any(), roleRepo.GetFilterOptions{ID: "role-123"}).
-					Return(nil, errors.New("database connection error"))
+					Return(nil, apperrors.NewApplicationError(mappings.RoleGetQueryError, nil))
 			},
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleGetQueryError, nil),
 		},
 		"when repository delete returns error": {
 			id: "role-123",
@@ -104,9 +105,9 @@ func TestDeleteUsecase_Execute(t *testing.T) {
 					}, nil)
 				f.repository.EXPECT().
 					Delete(gomock.Any(), "role-123").
-					Return(errors.New("database connection error"))
+					Return(apperrors.NewApplicationError(mappings.RoleDeleteQueryError, nil))
 			},
-			expectedErr: errors.New("database connection error"),
+			expectedErr: apperrors.NewApplicationError(mappings.RoleDeleteQueryError, nil),
 		},
 	}
 

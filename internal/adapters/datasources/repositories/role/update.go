@@ -5,17 +5,19 @@ import (
 	"database/sql"
 
 	"github.com/tapiaw38/auth-api-be/internal/domain"
+	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
+	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
 
-func (r *repository) Update(ctx context.Context, id string, role *domain.Role) (string, error) {
+func (r *repository) Update(ctx context.Context, id string, role *domain.Role) (string, apperrors.ApplicationError) {
 	row, err := r.executeUpdateQuery(ctx, id, role)
 	if err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.RoleUpdateQueryError, err)
 	}
 
 	var updatedID string
 	if err := row.Scan(&updatedID); err != nil {
-		return "", err
+		return "", apperrors.NewApplicationError(mappings.RoleUpdateQueryError, err)
 	}
 
 	return updatedID, nil

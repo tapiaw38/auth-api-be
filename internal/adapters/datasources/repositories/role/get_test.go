@@ -121,7 +121,7 @@ func TestRepository_Get(t *testing.T) {
 			},
 			expectedRole:  nil,
 			expectedError: true,
-			errorMsg:      "sql: no rows in result set",
+			errorMsg:      "failed to retrieve role information",
 		},
 		{
 			name: "database connection error",
@@ -135,7 +135,7 @@ func TestRepository_Get(t *testing.T) {
 			},
 			expectedRole:  nil,
 			expectedError: true,
-			errorMsg:      "sql: connection is already closed",
+			errorMsg:      "failed to retrieve role information",
 		},
 		{
 			name: "query execution error",
@@ -149,7 +149,7 @@ func TestRepository_Get(t *testing.T) {
 			},
 			expectedRole:  nil,
 			expectedError: true,
-			errorMsg:      "expected a connection to be available",
+			errorMsg:      "failed to retrieve role information",
 		},
 		{
 			name: "scan error - wrong number of columns",
@@ -234,17 +234,17 @@ func TestRepository_Get(t *testing.T) {
 			ctx := context.Background()
 
 			// Act
-			role, err := repo.Get(ctx, tt.filters)
+			role, appErr := repo.Get(ctx, tt.filters)
 
 			// Assert
 			if tt.expectedError {
-				assert.Error(t, err)
+				assert.Error(t, appErr)
 				if tt.errorMsg != "" {
-					assert.Contains(t, err.Error(), tt.errorMsg)
+					assert.Contains(t, appErr.Message(), tt.errorMsg)
 				}
 				assert.Nil(t, role)
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, appErr)
 				assert.Equal(t, tt.expectedRole, role)
 			}
 
