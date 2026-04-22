@@ -104,41 +104,55 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
                             'id', r.id,
                             'name', r.name
                         )
-                    ), '[]'
+                    ) FILTER (WHERE r.id IS NOT NULL), '[]'
                 ) AS roles
             FROM users u
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
-            `
+            WHERE 1=1`
 
-	query += ` WHERE id = id`
 	argIndex := 1
-
 	var args []any
 
 	if filters.IsActive != nil {
-		query += ` AND is_active = $` + fmt.Sprintf("%d", argIndex)
+		query += ` AND u.is_active = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, *filters.IsActive)
 		argIndex++
 	}
 
 	if filters.VerifiedEmail != nil {
-		query += ` AND verified_email = $` + fmt.Sprintf("%d", argIndex)
+		query += ` AND u.verified_email = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, *filters.VerifiedEmail)
 		argIndex++
 	}
 
 	if filters.RoleID != "" {
-		query += ` AND role_id = $` + fmt.Sprintf("%d", argIndex)
+		query += ` AND ur.role_id = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, filters.RoleID)
 		argIndex++
 	}
 
+	if filters.RoleName != "" {
+		query += ` AND r.name = $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, filters.RoleName)
+		argIndex++
+	}
+
 	if !filters.CreatedAt.IsZero() {
-		query += ` AND created_at = $` + fmt.Sprintf("%d", argIndex)
+		query += ` AND u.created_at = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, filters.CreatedAt)
 		argIndex++
 	}
+
+	query += ` GROUP BY
+		u.id, u.first_name, u.last_name,
+		u.username, u.email, u.password,
+		u.phone_number, u.picture, u.address,
+		u.is_active, u.verified_email,
+		u.verified_email_token, u.verified_email_token_expiry,
+		u.password_reset_token, u.password_reset_token_expiry,
+		u.token_version, u.auth_method,
+		u.created_at, u.updated_at`
 
 	if filters.Limit > 0 {
 		query += ` LIMIT $` + fmt.Sprintf("%d", argIndex)
@@ -151,15 +165,6 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 		args = append(args, filters.Offset)
 		argIndex++
 	}
-
-	query += ` GROUP BY
-		u.id, u.first_name, u.last_name,
-		u.username, u.email, u.password,
-		u.phone_number, u.picture, u.address,
-		u.is_active, u.verified_email,
-		u.verified_email_token, u.verified_email_token_expiry,
-		u.password_reset_token, u.password_reset_token_expiry,
-		u.created_at, u.updated_at`
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
