@@ -36,6 +36,7 @@ type (
 		IsActive      *bool
 		VerifiedEmail *bool
 		RoleID        string
+		RoleName      string
 		CreatedAt     time.Time
 		Limit         int
 		Offset        int

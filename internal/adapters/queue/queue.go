@@ -88,7 +88,12 @@ func (r *RabbitMQ) Publish(topic Topic, data interface{}) error {
 	r.mutex.Unlock()
 
 	if !ok {
-		return fmt.Errorf("publisher for topic %s not found", topic)
+		if err := r.GetPublisher(topic); err != nil {
+			return fmt.Errorf("failed to initialize publisher for topic %s: %w", topic, err)
+		}
+		r.mutex.Lock()
+		pub = r.publishers[topic]
+		r.mutex.Unlock()
 	}
 
 	q, err := pub.ch.QueueDeclare(
