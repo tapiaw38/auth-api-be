@@ -47,7 +47,7 @@ func (u *verifyEmailUsecase) Execute(ctx context.Context, token string) (string,
 
 	user.VerifiedEmail = true
 
-	if _, err = app.Repositories.User.Update(
+	if _, err = app.Repositories.User.Patch(
 		ctx,
 		user.ID,
 		user,

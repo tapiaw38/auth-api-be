@@ -4,21 +4,23 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
 	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
+	platformweb "github.com/tapiaw38/auth-api-be/internal/platform/web"
 	"github.com/tapiaw38/auth-api-be/internal/usecases/user"
 )
 
 type updateInput struct {
-	FirstName     string  `json:"first_name"`
-	LastName      string  `json:"last_name"`
-	Email         string  `json:"email"`
-	Picture       *string `json:"picture"`
-	PhoneNumber   *string `json:"phone_number"`
-	Address       *string `json:"address"`
-	IsActive      *bool   `json:"is_active"`
-	VerifiedEmail *bool   `json:"verified_email"`
+	FirstName     platformweb.RequestOptional[string] `json:"first_name"`
+	LastName      platformweb.RequestOptional[string] `json:"last_name"`
+	Email         platformweb.RequestOptional[string] `json:"email"`
+	Picture       platformweb.RequestOptional[string] `json:"picture"`
+	PhoneNumber   platformweb.RequestOptional[string] `json:"phone_number"`
+	Address       platformweb.RequestOptional[string] `json:"address"`
+	IsActive      platformweb.RequestOptional[bool]   `json:"is_active"`
+	VerifiedEmail platformweb.RequestOptional[bool]   `json:"verified_email"`
 }
 
 func NewUpdateByIDHandler(usecase user.UpdateUsecase) gin.HandlerFunc {
@@ -44,17 +46,19 @@ func NewUpdateByIDHandler(usecase user.UpdateUsecase) gin.HandlerFunc {
 		}
 
 		output, appErr := usecase.Execute(c, user.UpdateInput{
-			ID:            id,
-			AuthUsername:  username,
-			AuthRoles:     roles,
-			FirstName:     input.FirstName,
-			LastName:      input.LastName,
-			Email:         input.Email,
-			Picture:       input.Picture,
-			PhoneNumber:   input.PhoneNumber,
-			Address:       input.Address,
-			IsActive:      input.IsActive,
-			VerifiedEmail: input.VerifiedEmail,
+			ID:             id,
+			AuthUsername:   username,
+			CanManageUsers: domain.CanManageUsers(domain.RolesFromClaims(roles)),
+			Patch: domain.UserPatch{
+				FirstName:     toDomainOptional(input.FirstName),
+				LastName:      toDomainOptional(input.LastName),
+				Email:         toDomainOptional(input.Email),
+				Picture:       toDomainOptional(input.Picture),
+				PhoneNumber:   toDomainOptional(input.PhoneNumber),
+				Address:       toDomainOptional(input.Address),
+				IsActive:      toDomainOptional(input.IsActive),
+				VerifiedEmail: toDomainOptional(input.VerifiedEmail),
+			},
 		})
 		if appErr != nil {
 			appErr.Log(c)
@@ -63,5 +67,12 @@ func NewUpdateByIDHandler(usecase user.UpdateUsecase) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, output)
+	}
+}
+
+func toDomainOptional[T any](field platformweb.RequestOptional[T]) domain.Optional[T] {
+	return domain.Optional[T]{
+		Set:   field.Set,
+		Value: field.Value,
 	}
 }

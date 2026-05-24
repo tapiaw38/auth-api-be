@@ -42,11 +42,11 @@ func TestResetPasswordUsecase(t *testing.T) {
 					ID:                       "user-123",
 					Email:                    "test@example.com",
 					Password:                 string(hashedPassword),
-					PasswordResetToken:       &(&struct{s string}{"valid-token"}).s,
+					PasswordResetToken:       &(&struct{ s string }{"valid-token"}).s,
 					PasswordResetTokenExpiry: &validTime,
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token"}).Return(user, nil)
-				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
+				f.repository.EXPECT().Patch(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
 				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(nil)
 			},
 			expectedErr: nil,
@@ -73,7 +73,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 			prepare: func(f *fields) {
 				user := &domain.User{
 					ID:                       "user-123",
-					PasswordResetToken:       &(&struct{s string}{"expired-token"}).s,
+					PasswordResetToken:       &(&struct{ s string }{"expired-token"}).s,
 					PasswordResetTokenExpiry: &expiredTime,
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "expired-token"}).Return(user, nil)
@@ -88,11 +88,11 @@ func TestResetPasswordUsecase(t *testing.T) {
 					ID:                       "user-123",
 					Email:                    "test@example.com",
 					Password:                 string(hashedPassword),
-					PasswordResetToken:       &(&struct{s string}{"valid-token-update-fail"}).s,
+					PasswordResetToken:       &(&struct{ s string }{"valid-token-update-fail"}).s,
 					PasswordResetTokenExpiry: &validTime,
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token-update-fail"}).Return(user, nil)
-				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("", apperrors.NewApplicationError(mappings.UserUpdateQueryError, nil))
+				f.repository.EXPECT().Patch(gomock.Any(), "user-123", gomock.Any()).Return("", apperrors.NewApplicationError(mappings.UserUpdateQueryError, nil))
 			},
 			expectedErr: apperrors.NewApplicationError(mappings.UserUpdateQueryError, nil),
 		},
@@ -104,11 +104,11 @@ func TestResetPasswordUsecase(t *testing.T) {
 					ID:                       "user-123",
 					Email:                    "test@example.com",
 					Password:                 string(hashedPassword),
-					PasswordResetToken:       &(&struct{s string}{"valid-token-invalidate-fail"}).s,
+					PasswordResetToken:       &(&struct{ s string }{"valid-token-invalidate-fail"}).s,
 					PasswordResetTokenExpiry: &validTime,
 				}
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token-invalidate-fail"}).Return(user, nil)
-				f.repository.EXPECT().Update(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
+				f.repository.EXPECT().Patch(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
 				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(apperrors.NewApplicationError(mappings.UserResetPasswordUpdateError, nil))
 			},
 			expectedErr: apperrors.NewApplicationError(mappings.UserResetPasswordUpdateError, nil),

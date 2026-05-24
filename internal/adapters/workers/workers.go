@@ -136,7 +136,7 @@ func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error
 
 				if err := cons.handler(d.Body); err != nil {
 					log.Printf("Error handling message: %v", err)
-					requeueMessage = true
+					requeueMessage = shouldRequeue(err)
 					return
 				}
 

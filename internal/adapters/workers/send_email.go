@@ -28,16 +28,7 @@ func NewEmailWorker(consumerManager *ConsumerManager, integrations *integrations
 func (w *EmailWorker) Start(ctx context.Context) error {
 	w.ctx, w.cancel = context.WithCancel(ctx)
 
-	handler := func(body []byte) error {
-		var input notification.SendEmailInput
-		if err := json.Unmarshal(body, &input); err != nil {
-			return fmt.Errorf("failed to unmarshal email input: %w", err)
-		}
-		log.Printf("Processing email for: %s", input.To)
-		return w.integrations.Notification.SendEmail(input)
-	}
-
-	if err := w.consumerManager.GetConsumer(queue.TopicSendEmail, handler); err != nil {
+	if err := w.consumerManager.GetConsumer(queue.TopicSendEmail, w.handler()); err != nil {
 		return fmt.Errorf("failed to initialize email consumer: %w", err)
 	}
 
@@ -50,6 +41,17 @@ func (w *EmailWorker) Start(ctx context.Context) error {
 	log.Println("Email worker started successfully")
 
 	return nil
+}
+
+func (w *EmailWorker) handler() ConsumerHandler {
+	return func(body []byte) error {
+		var input notification.SendEmailInput
+		if err := json.Unmarshal(body, &input); err != nil {
+			return Permanent(fmt.Errorf("failed to unmarshal email input: %w", err))
+		}
+		log.Printf("Processing email for: %s", input.To)
+		return w.integrations.Notification.SendEmail(input)
+	}
 }
 
 func (w *EmailWorker) Stop() error {

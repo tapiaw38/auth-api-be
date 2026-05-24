@@ -13,7 +13,7 @@ type (
 	Repository interface {
 		Create(context.Context, domain.User) (string, apperrors.ApplicationError)
 		Get(context.Context, GetFilterOptions) (*domain.User, apperrors.ApplicationError)
-		Update(context.Context, string, *domain.User) (string, apperrors.ApplicationError)
+		Patch(context.Context, string, *domain.User) (string, apperrors.ApplicationError)
 		Delete(context.Context, string) apperrors.ApplicationError
 		List(context.Context, ListFilterOptions) ([]*domain.User, apperrors.ApplicationError)
 		ChangePassword(ctx context.Context, id string, password string) apperrors.ApplicationError

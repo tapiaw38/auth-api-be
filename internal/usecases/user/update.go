@@ -3,12 +3,10 @@ package user
 import (
 	"context"
 	"errors"
-	"time"
 
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
-	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
 	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
 )
@@ -23,17 +21,10 @@ type (
 	}
 
 	UpdateInput struct {
-		ID            string
-		AuthUsername  string
-		AuthRoles     []auth.RoleClaim
-		FirstName     string
-		LastName      string
-		Email         string
-		Picture       *string
-		PhoneNumber   *string
-		Address       *string
-		IsActive      *bool
-		VerifiedEmail *bool
+		ID             string
+		AuthUsername   string
+		CanManageUsers bool
+		Patch          domain.UserPatch
 	}
 
 	UpdateOutput struct {
@@ -61,28 +52,39 @@ func (u *updateUsecase) Execute(ctx context.Context, input UpdateInput) (*Update
 			errors.New("authenticated user not found"))
 	}
 
-	if authUser.ID != input.ID && !hasAdminRole(input.AuthRoles) {
+	if authUser.ID != input.ID && !input.CanManageUsers {
 		return nil, apperrors.NewApplicationError(mappings.UserUpdateUnauthorizedError,
 			errors.New("user attempted to update another user without admin role"))
 	}
 
-	payload := &domain.User{
-		FirstName:   input.FirstName,
-		LastName:    input.LastName,
-		Email:       input.Email,
-		Picture:     input.Picture,
-		PhoneNumber: input.PhoneNumber,
-		Address:     input.Address,
-		UpdatedAt:   time.Now(),
-	}
-	if input.IsActive != nil {
-		payload.IsActive = *input.IsActive
-	}
-	if input.VerifiedEmail != nil {
-		payload.VerifiedEmail = *input.VerifiedEmail
+	if err := targetPatchValidation(input.Patch); err != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateInvalidInputError, err)
 	}
 
-	updatedID, repoErr := app.Repositories.User.Update(ctx, input.ID, payload)
+	if !input.CanManageUsers && hasRestrictedFieldUpdates(input) {
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateRestrictedFieldsError,
+			errors.New("user attempted to update restricted fields"))
+	}
+
+	targetUser := authUser
+	if authUser.ID != input.ID {
+		targetUser, appErr = app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
+			ID: input.ID,
+		})
+		if appErr != nil {
+			return nil, appErr
+		}
+	}
+	if targetUser == nil {
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateNotFoundError, nil)
+	}
+
+	payload := *targetUser
+	if err := payload.ApplyPatch(input.Patch); err != nil {
+		return nil, apperrors.NewApplicationError(mappings.UserUpdateInvalidInputError, err)
+	}
+
+	updatedID, repoErr := app.Repositories.User.Patch(ctx, input.ID, &payload)
 	if repoErr != nil {
 		return nil, repoErr
 	}
@@ -99,11 +101,8 @@ func (u *updateUsecase) Execute(ctx context.Context, input UpdateInput) (*Update
 	}, nil
 }
 
-func hasAdminRole(roles []auth.RoleClaim) bool {
-	for _, r := range roles {
-		if r.Name == string(domain.RoleSuperAdmin) || r.Name == string(domain.RoleAdmin) {
-			return true
-		}
-	}
-	return false
+func hasRestrictedFieldUpdates(input UpdateInput) bool {
+	return input.Patch.IsActive.Set || input.Patch.VerifiedEmail.Set
 }
+
+func targetPatchValidation(patch domain.UserPatch) error { return (&domain.User{}).ApplyPatch(patch) }

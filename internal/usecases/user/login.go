@@ -176,7 +176,7 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 		user.Picture = utils.ToPointer(userInfo.Picture)
 	}
 
-	updatedUserID, appErr := app.Repositories.User.Update(ctx, user.ID, user)
+	updatedUserID, appErr := app.Repositories.User.Patch(ctx, user.ID, user)
 	if appErr != nil {
 		return nil, appErr
 	}

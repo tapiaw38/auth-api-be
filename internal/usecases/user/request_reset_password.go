@@ -57,7 +57,7 @@ func (u *requestResetPasswordUsecase) Execute(ctx context.Context, email string)
 	user.PasswordResetToken = &token
 	user.PasswordResetTokenExpiry = &tokenExpiry
 
-	if _, err := app.Repositories.User.Update(ctx, user.ID, user); err != nil {
+	if _, err := app.Repositories.User.Patch(ctx, user.ID, user); err != nil {
 		return nil, apperrors.NewApplicationError(mappings.UserRequestResetPasswordUpdateError, err)
 	}
 

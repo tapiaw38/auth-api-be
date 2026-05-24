@@ -23,6 +23,14 @@ type (
 	}
 )
 
+func (r RoleClaim) GetID() string {
+	return r.ID
+}
+
+func (r RoleClaim) GetName() string {
+	return r.Name
+}
+
 func GenerateToken(user *domain.User, expiration time.Duration) (string, error) {
 	roles := make([]RoleClaim, 0, len(user.Roles))
 	for _, role := range user.Roles {

@@ -178,6 +178,18 @@ var (
 		"you do not have permission to update this user",
 	}
 
+	UserUpdateRestrictedFieldsError = ErrorDetails{
+		"user:update:restricted-fields",
+		http.StatusForbidden,
+		"you do not have permission to update these fields",
+	}
+
+	UserUpdateInvalidInputError = ErrorDetails{
+		"user:update:invalid-input",
+		http.StatusBadRequest,
+		"invalid user update data",
+	}
+
 	UserDeleteNotFoundError = ErrorDetails{
 		"user:delete:not-found",
 		http.StatusNotFound,

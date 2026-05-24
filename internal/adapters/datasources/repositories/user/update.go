@@ -11,6 +11,10 @@ import (
 )
 
 func (r *repository) Update(ctx context.Context, id string, user *domain.User) (string, apperrors.ApplicationError) {
+	return r.Patch(ctx, id, user)
+}
+
+func (r *repository) Patch(ctx context.Context, id string, user *domain.User) (string, apperrors.ApplicationError) {
 	row, err := r.executeUpdateQuery(ctx, id, user)
 	if err != nil {
 		return "", err
