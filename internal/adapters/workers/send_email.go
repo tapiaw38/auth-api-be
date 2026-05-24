@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -27,10 +28,10 @@ func NewEmailWorker(consumerManager *ConsumerManager, integrations *integrations
 func (w *EmailWorker) Start(ctx context.Context) error {
 	w.ctx, w.cancel = context.WithCancel(ctx)
 
-	handler := func(data any) error {
-		input, ok := data.(notification.SendEmailInput)
-		if !ok {
-			return fmt.Errorf("invalid data type, expected notification.SendEmailInput")
+	handler := func(body []byte) error {
+		var input notification.SendEmailInput
+		if err := json.Unmarshal(body, &input); err != nil {
+			return fmt.Errorf("failed to unmarshal email input: %w", err)
 		}
 		log.Printf("Processing email for: %s", input.To)
 		return w.integrations.Notification.SendEmail(input)

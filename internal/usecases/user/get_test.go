@@ -67,6 +67,7 @@ func TestGetUsecase_Execute(t *testing.T) {
 			expected: &usecase.GetOutput{
 				Data: usecase.UserOutputData{
 					ID:            "user-123",
+					Username:      "johndoe",
 					FirstName:     "John",
 					LastName:      "Doe",
 					Email:         "john@example.com",
@@ -116,6 +117,7 @@ func TestGetUsecase_Execute(t *testing.T) {
 			expected: &usecase.GetOutput{
 				Data: usecase.UserOutputData{
 					ID:            "user-456",
+					Username:      "johndoe",
 					FirstName:     "Jane",
 					LastName:      "Smith",
 					Email:         "jane@example.com",

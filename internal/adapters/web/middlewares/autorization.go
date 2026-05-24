@@ -45,6 +45,7 @@ func AuthorizationMiddleware(usecase user.GetTokenVersionUsecase) gin.HandlerFun
 		}
 
 		ctx = context.WithValue(ctx, "userID", claims.UserID)
+		ctx = context.WithValue(ctx, "userRoles", claims.Roles)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}

@@ -3,7 +3,6 @@ package mappings
 import "net/http"
 
 var (
-	// Login errors
 	UserLoginInvalidCredentialsError = ErrorDetails{
 		"user:login:invalid-credentials",
 		http.StatusUnauthorized,
@@ -149,7 +148,6 @@ var (
 		"failed to send verification email",
 	}
 
-	// Get user errors
 	UserGetNotFoundError = ErrorDetails{
 		"user:get:not-found",
 		http.StatusNotFound,
@@ -162,7 +160,6 @@ var (
 		"failed to retrieve user information",
 	}
 
-	// Update user errors
 	UserUpdateNotFoundError = ErrorDetails{
 		"user:update:not-found",
 		http.StatusNotFound,
@@ -175,7 +172,12 @@ var (
 		"failed to update user information",
 	}
 
-	// Delete user errors
+	UserUpdateUnauthorizedError = ErrorDetails{
+		"user:update:unauthorized",
+		http.StatusForbidden,
+		"you do not have permission to update this user",
+	}
+
 	UserDeleteNotFoundError = ErrorDetails{
 		"user:delete:not-found",
 		http.StatusNotFound,
@@ -188,14 +190,12 @@ var (
 		"failed to delete user",
 	}
 
-	// List users errors
 	UserListQueryError = ErrorDetails{
 		"user:list:query-error",
 		http.StatusInternalServerError,
 		"failed to retrieve user list",
 	}
 
-	// Password reset errors
 	UserRequestResetPasswordEmailRequiredError = ErrorDetails{
 		"user:request-reset-password:email-required",
 		http.StatusBadRequest,
@@ -262,7 +262,6 @@ var (
 		"failed to reset password",
 	}
 
-	// Change password errors
 	UserChangePasswordOldPasswordRequiredError = ErrorDetails{
 		"user:change-password:old-password-required",
 		http.StatusBadRequest,
@@ -299,7 +298,6 @@ var (
 		"password does not meet strength requirements",
 	}
 
-	// Verify email errors
 	UserVerifyEmailTokenRequiredError = ErrorDetails{
 		"user:verify-email:token-required",
 		http.StatusBadRequest,
@@ -318,7 +316,6 @@ var (
 		"failed to verify email",
 	}
 
-	// Set password errors
 	UserSetPasswordRequiredError = ErrorDetails{
 		"user:set-password:password-required",
 		http.StatusBadRequest,
