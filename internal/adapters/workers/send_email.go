@@ -27,19 +27,22 @@ func NewEmailWorker(consumerManager *ConsumerManager, integrations *integrations
 func (w *EmailWorker) Start(ctx context.Context) error {
 	w.ctx, w.cancel = context.WithCancel(ctx)
 
+	handler := func(data any) error {
+		input, ok := data.(notification.SendEmailInput)
+		if !ok {
+			return fmt.Errorf("invalid data type, expected notification.SendEmailInput")
+		}
+		log.Printf("Processing email for: %s", input.To)
+		return w.integrations.Notification.SendEmail(input)
+	}
+
+	if err := w.consumerManager.GetConsumer(queue.TopicSendEmail, handler); err != nil {
+		return fmt.Errorf("failed to initialize email consumer: %w", err)
+	}
+
 	go func() {
-		if err := w.consumerManager.StartConsumer(
-			queue.TopicSendEmail,
-			func(data any) error {
-				input, ok := data.(notification.SendEmailInput)
-				if !ok {
-					return fmt.Errorf("invalid data type, expected notification.SendEmailInput")
-				}
-				log.Printf("Processing email for: %s", input.To)
-				return w.integrations.Notification.SendEmail(input)
-			},
-		); err != nil {
-			log.Fatalf("Failed to start email consumer: %v", err)
+		if err := w.consumerManager.Consume(w.ctx, queue.TopicSendEmail); err != nil {
+			log.Printf("Email consumer stopped with error: %v", err)
 		}
 	}()
 

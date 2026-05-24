@@ -98,7 +98,7 @@ func (r *RabbitMQ) Publish(topic Topic, data interface{}) error {
 
 	q, err := pub.ch.QueueDeclare(
 		string(pub.topic),
-		false, // Durable
+		true,  // Durable
 		false, // Auto-delete
 		false, // Exclusive
 		false, // No-wait
@@ -119,8 +119,9 @@ func (r *RabbitMQ) Publish(topic Topic, data interface{}) error {
 		false,  // mandatory
 		false,  // immediate
 		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        jsonData,
+			ContentType:  "application/json",
+			DeliveryMode: amqp.Persistent,
+			Body:         jsonData,
 		},
 	)
 }
