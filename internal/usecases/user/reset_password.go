@@ -68,7 +68,7 @@ func (u *resetPasswordUsecase) Execute(ctx context.Context, input ResetPasswordI
 
 	user.Password = string(hashedPassword)
 
-	if _, appErr := app.Repositories.User.Update(
+	if _, appErr := app.Repositories.User.Patch(
 		ctx,
 		user.ID,
 		user,

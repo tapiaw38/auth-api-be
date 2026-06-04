@@ -2,17 +2,12 @@ package workers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	"github.com/streadway/amqp"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/queue"
-	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations/notification"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 )
 
@@ -22,11 +17,7 @@ type (
 		Stop() error
 	}
 
-	Consumer interface {
-		StartConsumer(topic queue.Topic, handler ConsumerHandler) error
-	}
-
-	ConsumerHandler func(any) error
+	ConsumerHandler func([]byte) error
 
 	ConsumerManager struct {
 		conn      *amqp.Connection
@@ -71,31 +62,6 @@ func (cm *ConsumerManager) GetConsumer(topic queue.Topic, handler ConsumerHandle
 	return nil
 }
 
-func (cm *ConsumerManager) StartConsumer(topic queue.Topic, handler ConsumerHandler) error {
-	log.Printf("Starting consumer for topic: %s", topic)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	err := cm.GetConsumer(topic, handler)
-	if err != nil {
-		return fmt.Errorf("failed to create consumer for topic %s: %w", topic, err)
-	}
-
-	log.Printf("Consumer for topic %s created successfully", topic)
-
-	if err := cm.Consume(ctx, topic); err != nil {
-		return fmt.Errorf("failed to start consumer: %w", err)
-	}
-
-	log.Printf("Consumer for topic %s is running", topic)
-
-	<-ctx.Done()
-	log.Println("Shutting down consumer gracefully...")
-
-	return nil
-}
-
 func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error {
 	cm.mutex.Lock()
 	cons, ok := cm.consumers[topic]
@@ -108,25 +74,29 @@ func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error
 	defer cons.ch.Close()
 
 	q, err := cons.ch.QueueDeclare(
-		string(cons.topic), // queue name
-		false,              // durable
-		false,              // delete when unused
-		false,              // exclusive
-		false,              // no-wait
-		nil,                // arguments
+		string(cons.topic),
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		return fmt.Errorf("queue declare failed: %w", err)
 	}
 
+	if err := cons.ch.Qos(1, 0, false); err != nil {
+		return fmt.Errorf("qos setup failed: %w", err)
+	}
+
 	msgs, err := cons.ch.Consume(
-		string(cons.topic), // queue name
-		"",                 // consumer
-		true,               // auto-ack
-		false,              // exclusive
-		false,              // no-local
-		false,              // no-wait
-		nil,                // args
+		string(cons.topic),
+		"",
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		return fmt.Errorf("consume failed: %w", err)
@@ -143,23 +113,34 @@ func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error
 			}
 			log.Printf("Received message: %s", string(d.Body))
 			func() {
+				ackMessage := false
+				requeueMessage := false
+
 				defer func() {
 					if r := recover(); r != nil {
 						log.Printf("Recovered in message handler: %v", r)
+						requeueMessage = true
 					}
-				}()
 
-				if cons.topic == queue.TopicSendEmail {
-					var sendEmailBody notification.SendEmailInput
-					if err := json.Unmarshal(d.Body, &sendEmailBody); err != nil {
-						log.Printf("Error unmarshaling message: %v", err)
+					if ackMessage {
+						if err := d.Ack(false); err != nil {
+							log.Printf("Failed to ack message: %v", err)
+						}
 						return
 					}
 
-					if err := cons.handler(sendEmailBody); err != nil {
-						log.Printf("Error handling message: %v", err)
+					if err := d.Nack(false, requeueMessage); err != nil {
+						log.Printf("Failed to nack message: %v", err)
 					}
+				}()
+
+				if err := cons.handler(d.Body); err != nil {
+					log.Printf("Error handling message: %v", err)
+					requeueMessage = shouldRequeue(err)
+					return
 				}
+
+				ackMessage = true
 			}()
 		case <-ctx.Done():
 			log.Println("Consumer context cancelled")

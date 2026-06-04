@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -35,6 +38,8 @@ func main() {
 
 func run() error {
 	configService := config.GetConfigService()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	db, err := database.GetSQLClientInstance()
 	if err != nil {
@@ -57,6 +62,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := mq.Close(); err != nil {
+			log.Printf("Failed to close RabbitMQ connection: %v", err)
+		}
+	}()
 
 	if configService.ServerConfig.GinMode == config.DebugMode {
 		gin.SetMode(gin.DebugMode)
@@ -73,7 +83,7 @@ func run() error {
 	ginConfig.ExposeHeaders = []string{"*"}
 	app.Use(cors.New(ginConfig))
 
-	if err := bootstrap(app, db, mq, &configService); err != nil {
+	if err := bootstrap(ctx, app, db, mq, &configService); err != nil {
 		return err
 	}
 
@@ -81,6 +91,7 @@ func run() error {
 }
 
 func bootstrap(
+	ctx context.Context,
 	app *gin.Engine,
 	db *sql.DB,
 	mq *queue.RabbitMQ,
@@ -103,8 +114,8 @@ func bootstrap(
 
 	web.RegisterApplicationRoutes(app, useCases)
 
-	if err := workers.RegisterWorkers(context.Background(), mq, contextFactory); err != nil {
-		log.Fatalf("Failed to register workers: %v", err)
+	if err := workers.RegisterWorkers(ctx, mq, contextFactory); err != nil {
+		log.Printf("Failed to register workers: %v", err)
 		return err
 	}
 

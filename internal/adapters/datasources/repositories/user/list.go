@@ -23,12 +23,14 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 	var users []*domain.User
 	for rows.Next() {
 		var (
-			id, firstName, lastName, username, email, password, verifiedEmailToken, authMethod string
+			id, firstName, lastName, username, email, password, authMethod string
 		)
 		var phoneNumber, picture, address, passwordResetToken *string
 		var isActive, verifiedEmail bool
-		var createdAt, updatedAt, verifiedEmailTokenExpiry time.Time
-		var passwordResetTokenExpiry *time.Time
+		var createdAt, updatedAt time.Time
+		var verifiedEmailToken sql.NullString
+		var verifiedEmailTokenExpiry sql.NullTime
+		var passwordResetTokenExpiry sql.NullTime
 		var tokenVersion uint
 		var rolesJSON json.RawMessage
 
@@ -63,6 +65,21 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 			return nil, apperrors.NewApplicationError(mappings.UserListQueryError, err3)
 		}
 
+		var verifiedEmailTokenValue string
+		if verifiedEmailToken.Valid {
+			verifiedEmailTokenValue = verifiedEmailToken.String
+		}
+
+		var verifiedEmailTokenExpiryValue time.Time
+		if verifiedEmailTokenExpiry.Valid {
+			verifiedEmailTokenExpiryValue = verifiedEmailTokenExpiry.Time
+		}
+
+		var passwordResetTokenExpiryValue *time.Time
+		if passwordResetTokenExpiry.Valid {
+			passwordResetTokenExpiryValue = &passwordResetTokenExpiry.Time
+		}
+
 		users = append(users, unmarshalUser(
 			id,
 			firstName,
@@ -75,10 +92,10 @@ func (r *repository) List(ctx context.Context, filters ListFilterOptions) ([]*do
 			address,
 			isActive,
 			verifiedEmail,
-			verifiedEmailToken,
-			verifiedEmailTokenExpiry,
+			verifiedEmailTokenValue,
+			verifiedEmailTokenExpiryValue,
 			passwordResetToken,
-			passwordResetTokenExpiry,
+			passwordResetTokenExpiryValue,
 			tokenVersion,
 			authMethod,
 			createdAt,

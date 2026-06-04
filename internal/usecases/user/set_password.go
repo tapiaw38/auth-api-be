@@ -63,7 +63,7 @@ func (u *setPasswordUsecase) Execute(ctx context.Context, input SetPasswordInput
 	user.Password = string(hashedPassword)
 	user.AuthMethod = string(domain.AuthMethodHybrid)
 
-	if _, appErr = app.Repositories.User.Update(ctx, user.ID, user); appErr != nil {
+	if _, appErr = app.Repositories.User.Patch(ctx, user.ID, user); appErr != nil {
 		return appErr
 	}
 

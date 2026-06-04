@@ -10,17 +10,40 @@ import (
 )
 
 type (
+	RoleClaim struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+
 	CustomClaims struct {
-		UserID       string `json:"user_id"`
-		TokenVersion uint   `json:"token_version"`
+		UserID       string      `json:"user_id"`
+		TokenVersion uint        `json:"token_version"`
+		Roles        []RoleClaim `json:"roles"`
 		jwt.StandardClaims
 	}
 )
 
+func (r RoleClaim) GetID() string {
+	return r.ID
+}
+
+func (r RoleClaim) GetName() string {
+	return r.Name
+}
+
 func GenerateToken(user *domain.User, expiration time.Duration) (string, error) {
+	roles := make([]RoleClaim, 0, len(user.Roles))
+	for _, role := range user.Roles {
+		roles = append(roles, RoleClaim{
+			ID:   role.ID,
+			Name: string(role.Name),
+		})
+	}
+
 	claims := CustomClaims{
 		UserID:       user.Username,
 		TokenVersion: user.TokenVersion,
+		Roles:        roles,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(expiration).Unix(),
 		},

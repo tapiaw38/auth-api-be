@@ -11,6 +11,10 @@ import (
 )
 
 func (r *repository) Update(ctx context.Context, id string, user *domain.User) (string, apperrors.ApplicationError) {
+	return r.Patch(ctx, id, user)
+}
+
+func (r *repository) Patch(ctx context.Context, id string, user *domain.User) (string, apperrors.ApplicationError) {
 	row, err := r.executeUpdateQuery(ctx, id, user)
 	if err != nil {
 		return "", err
@@ -42,8 +46,8 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 			password_reset_token = COALESCE($12, password_reset_token),
 			password_reset_token_expiry = COALESCE($13, password_reset_token_expiry),
 			auth_method = COALESCE($14, auth_method),
-			updated_at = $15
-		WHERE id = $16
+			updated_at = NOW()
+		WHERE id = $15
 		RETURNING id;`
 
 	var (
@@ -96,7 +100,6 @@ func (r *repository) executeUpdateQuery(ctx context.Context, id string, user *do
 		passwordResetToken,
 		passwordResetTokenExpiry,
 		user.AuthMethod,
-		user.UpdatedAt,
 		id,
 	}
 

@@ -5,6 +5,7 @@ import "github.com/tapiaw38/auth-api-be/internal/domain"
 type (
 	UserOutputData struct {
 		ID            string           `json:"id"`
+		Username      string           `json:"username"`
 		FirstName     string           `json:"first_name"`
 		LastName      string           `json:"last_name"`
 		Email         string           `json:"email"`
@@ -40,6 +41,7 @@ func toUserOutputData(user *domain.User) UserOutputData {
 
 	return UserOutputData{
 		ID:            user.ID,
+		Username:      user.Username,
 		FirstName:     user.FirstName,
 		LastName:      user.LastName,
 		Email:         user.Email,

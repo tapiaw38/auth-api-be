@@ -130,6 +130,21 @@ func (mr *MockRepositoryMockRecorder) List(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRepository)(nil).List), arg0, arg1)
 }
 
+// Patch mocks base method.
+func (m *MockRepository) Patch(arg0 context.Context, arg1 string, arg2 *domain.User) (string, errors.ApplicationError) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Patch", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(errors.ApplicationError)
+	return ret0, ret1
+}
+
+// Patch indicates an expected call of Patch.
+func (mr *MockRepositoryMockRecorder) Patch(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Patch", reflect.TypeOf((*MockRepository)(nil).Patch), arg0, arg1, arg2)
+}
+
 // Update mocks base method.
 func (m *MockRepository) Update(arg0 context.Context, arg1 string, arg2 *domain.User) (string, errors.ApplicationError) {
 	m.ctrl.T.Helper()
