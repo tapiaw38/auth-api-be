@@ -103,12 +103,8 @@ func bootstrap(
 	contextFactory := appcontext.NewFactory(datasources, integrations, mq, configService)
 	useCases := usecases.CreateUsecases(contextFactory)
 
-	if !configService.InitConfig.EnsureDefaultRoles {
-		log.Println("Skipping default roles initialization")
-	}
-
-	if err := ensureDefaultRoles(context.Background(), useCases.Role.EnsureUsecase); err != nil {
-		log.Printf("Failed to ensure default roles: %v", err)
+	if err := initializeDefaults(context.Background(), configService, useCases); err != nil {
+		log.Printf("Failed to initialize defaults: %v", err)
 		return err
 	}
 
@@ -119,6 +115,28 @@ func bootstrap(
 		return err
 	}
 
+	return nil
+}
+
+func initializeDefaults(ctx context.Context, configService *config.ConfigurationService, useCases *usecases.Usecases) error {
+	log.Println("Initializing application defaults...")
+
+	if configService.InitConfig.EnsureDefaultRoles {
+		if err := ensureDefaultRoles(ctx, useCases.Role.EnsureUsecase); err != nil {
+			return err
+		}
+	} else {
+		log.Println("Skipping default roles initialization")
+	}
+
+	// Add more initialization tasks here in the future
+	// if configService.InitConfig.SomeOtherInit {
+	//     if err := someOtherInit(ctx, ...); err != nil {
+	//         return err
+	//     }
+	// }
+
+	log.Println("Application defaults initialized successfully")
 	return nil
 }
 
