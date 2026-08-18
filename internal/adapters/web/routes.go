@@ -5,6 +5,7 @@ import (
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/role"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/handlers/user"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/web/middlewares"
+	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/usecases"
 )
 
@@ -22,11 +23,12 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 	routeGroup.GET("auth/verify-email", user.NewVerifyEmailHandler(useCases.User.VerifyEmailUsecase))
 	routeGroup.POST("auth/request-reset-password", user.NewRequestResetPasswordHandler(useCases.User.RequestResetPasswordUsecase))
 	routeGroup.POST("auth/reset-password", user.NewResetPasswordHandler(useCases.User.ResetPasswordUsecase))
-	routeGroup.POST("role/ensure", role.NewEnsureHandler(useCases.Role.EnsureUsecase))
 
 	routeGroup.Use(middlewares.AuthorizationMiddleware(useCases.User.GetTokenVersionUsecase))
 	routeGroup.GET("user/me", user.NewMeHandler(useCases.User.GetUsecase))
-	routeGroup.GET("user/list", user.NewListHandler(useCases.User.ListUsecase))
+	routeGroup.GET("user/list",
+		middlewares.RequireRoles(domain.RoleSuperAdmin),
+		user.NewListHandler(useCases.User.ListUsecase))
 	routeGroup.GET("user/:id", user.NewGetByIDHandler(useCases.User.GetUsecase))
 	routeGroup.PUT("user/:id", user.NewUpdateByIDHandler(useCases.User.UpdateUsecase))
 	routeGroup.PUT("user/me/password", user.NewChangePasswordHandler(useCases.User.ChangePasswordUsecase))

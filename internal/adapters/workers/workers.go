@@ -117,7 +117,7 @@ func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error
 				log.Println("Message channel closed")
 				return nil
 			}
-			log.Printf("Received message: %s", string(d.Body))
+			log.Printf("Received message on topic %s (%d bytes)", cons.topic, len(d.Body))
 			func() {
 				handled := false
 
