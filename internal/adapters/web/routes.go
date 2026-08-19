@@ -31,6 +31,9 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 		user.NewListHandler(useCases.User.ListUsecase))
 	routeGroup.GET("user/:id", user.NewGetByIDHandler(useCases.User.GetUsecase))
 	routeGroup.PUT("user/:id", user.NewUpdateByIDHandler(useCases.User.UpdateUsecase))
+	routeGroup.PUT("user/:id/roles",
+		middlewares.RequireRoles(domain.RoleSuperAdmin),
+		user.NewUpdateRolesHandler(useCases.User.UpdateRolesUsecase))
 	routeGroup.PUT("user/me/password", user.NewChangePasswordHandler(useCases.User.ChangePasswordUsecase))
 	routeGroup.POST("user/me/password/set", user.NewSetPasswordHandler(useCases.User.SetPasswordUsecase))
 	routeGroup.GET("role/list", role.NewListHandler(useCases.Role.ListUsecase))

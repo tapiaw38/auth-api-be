@@ -24,6 +24,7 @@ type User struct {
 	RequestResetPasswordUsecase user.RequestResetPasswordUsecase
 	ChangePasswordUsecase       user.ChangePasswordUsecase
 	SetPasswordUsecase          user.SetPasswordUsecase
+	UpdateRolesUsecase          user.UpdateRolesUsecase
 }
 
 type Role struct {
@@ -46,6 +47,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 			RequestResetPasswordUsecase: user.NewRequestResetPasswordUsecase(contextFactory),
 			ChangePasswordUsecase:       user.NewChangePasswordUsecase(contextFactory),
 			SetPasswordUsecase:          user.NewSetPasswordUsecase(contextFactory),
+			UpdateRolesUsecase:          user.NewUpdateRolesUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),
