@@ -34,6 +34,9 @@ type (
 	}
 
 	ListFilterOptions struct {
+		// IDs filters by username — that's the identifier every other
+		// service stores as its own foreign "user_id" (see JWT user_id claim).
+		IDs           []string
 		IsActive      *bool
 		VerifiedEmail *bool
 		RoleID        string
