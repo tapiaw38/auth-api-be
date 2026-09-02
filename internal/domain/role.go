@@ -22,7 +22,7 @@ type (
 
 func CanManageUsers(roles []Role) bool {
 	for _, role := range roles {
-		if role.Name == RoleAdmin || role.Name == RoleSuperAdmin {
+		if role.Name == RoleSuperAdmin {
 			return true
 		}
 	}
