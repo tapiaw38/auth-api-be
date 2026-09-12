@@ -44,6 +44,7 @@ func TestChangePasswordUsecase(t *testing.T) {
 					Password: string(hashedPassword),
 				}, nil)
 				f.repository.EXPECT().ChangePassword(gomock.Any(), "user-123", gomock.Any()).Return(nil)
+				f.repository.EXPECT().IncrementTokenVersion(gomock.Any(), "user-123").Return(nil)
 			},
 			expectedErr: nil,
 		},

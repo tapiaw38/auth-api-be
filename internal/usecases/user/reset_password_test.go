@@ -48,6 +48,7 @@ func TestResetPasswordUsecase(t *testing.T) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token"}).Return(user, nil)
 				f.repository.EXPECT().Patch(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
 				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(nil)
+				f.repository.EXPECT().IncrementTokenVersion(gomock.Any(), "user-123").Return(nil)
 			},
 			expectedErr: nil,
 		},
