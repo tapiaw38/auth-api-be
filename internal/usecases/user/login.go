@@ -26,8 +26,9 @@ type (
 	}
 
 	LoginOutput struct {
-		Data  UserOutputData `json:"data"`
-		Token string         `json:"token"`
+		Data         UserOutputData `json:"data"`
+		Token        string         `json:"token"`
+		RefreshToken string         `json:"refresh_token"`
 	}
 
 	LoginInput struct {
@@ -88,14 +89,15 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 		return nil, apperrors.NewApplicationError(mappings.UserLoginUserNotFoundError, errors.New("user not found"))
 	}
 
-	token, err := auth.GenerateToken(user, time.Hour*24*7)
-	if err != nil {
-		return nil, apperrors.NewApplicationError(mappings.UserLoginTokenGenerationError, err)
+	issued, appErr := issueSession(ctx, app, user)
+	if appErr != nil {
+		return nil, appErr
 	}
 
 	return &LoginOutput{
-		Data:  toUserOutputData(user),
-		Token: token,
+		Data:         toUserOutputData(user),
+		Token:        issued.accessToken,
+		RefreshToken: issued.refreshToken,
 	}, nil
 }
 

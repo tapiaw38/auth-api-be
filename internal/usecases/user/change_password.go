@@ -70,5 +70,9 @@ func (u *changePasswordUsecase) Execute(ctx context.Context, input ChangePasswor
 		return appErr
 	}
 
+	if appErr := app.Repositories.RefreshToken.RevokeAllForUser(ctx, user.ID); appErr != nil {
+		return appErr
+	}
+
 	return nil
 }

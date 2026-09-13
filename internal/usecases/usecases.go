@@ -14,6 +14,7 @@ type Usecases struct {
 type User struct {
 	RegisterUsecase             user.RegisterUsecase
 	LoginUsecase                user.LoginUsecase
+	RefreshUsecase              user.RefreshUsecase
 	GetUsecase                  user.GetUsecase
 	UpdateUsecase               user.UpdateUsecase
 	DeleteUsecase               user.DeleteUsecase
@@ -38,6 +39,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 		User: User{
 			RegisterUsecase:             user.NewCreateUsecase(contextFactory),
 			LoginUsecase:                user.NewLoginUsecase(contextFactory),
+			RefreshUsecase:              user.NewRefreshUsecase(contextFactory),
 			GetUsecase:                  user.NewGetUsecase(contextFactory),
 			UpdateUsecase:               user.NewUpdateUsecase(contextFactory),
 			DeleteUsecase:               user.NewDeleteUsecase(contextFactory),
