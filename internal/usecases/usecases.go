@@ -20,6 +20,7 @@ type User struct {
 	DeleteUsecase               user.DeleteUsecase
 	ListUsecase                 user.ListUsecase
 	BatchUsecase                user.BatchUsecase
+	FindByEmailUsecase          user.FindByEmailUsecase
 	GetTokenVersionUsecase      user.GetTokenVersionUsecase
 	VerifyEmailUsecase          user.VerifyEmailUsecase
 	ResetPasswordUsecase        user.ResetPasswordUsecase
@@ -45,6 +46,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 			DeleteUsecase:               user.NewDeleteUsecase(contextFactory),
 			ListUsecase:                 user.NewListUsecase(contextFactory),
 			BatchUsecase:                user.NewBatchUsecase(contextFactory),
+			FindByEmailUsecase:          user.NewFindByEmailUsecase(contextFactory),
 			GetTokenVersionUsecase:      user.NewGetTokenVersionUsecase(contextFactory),
 			VerifyEmailUsecase:          user.NewVerifyEmailUsecase(contextFactory),
 			ResetPasswordUsecase:        user.NewResetPasswordUsecase(contextFactory),

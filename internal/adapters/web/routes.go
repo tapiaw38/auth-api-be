@@ -34,6 +34,7 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 		middlewares.RequireRoles(domain.RoleSuperAdmin),
 		user.NewGetByEmailHandler(useCases.User.GetUsecase))
 	routeGroup.GET("user/batch", user.NewBatchHandler(useCases.User.BatchUsecase))
+	routeGroup.GET("user/find-by-email", user.NewFindByEmailHandler(useCases.User.FindByEmailUsecase))
 	routeGroup.GET("user/:id/token-version", user.NewGetTokenVersionHandler(useCases.User.GetTokenVersionUsecase))
 	routeGroup.GET("user/:id", user.NewGetByIDHandler(useCases.User.GetUsecase))
 	routeGroup.PUT("user/:id", user.NewUpdateByIDHandler(useCases.User.UpdateUsecase))
