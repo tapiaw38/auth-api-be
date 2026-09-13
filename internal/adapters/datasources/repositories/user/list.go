@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
@@ -130,6 +131,12 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 
 	argIndex := 1
 	var args []any
+
+	if len(filters.IDs) > 0 {
+		query += ` AND u.username = ANY($` + fmt.Sprintf("%d", argIndex) + `)`
+		args = append(args, pq.Array(filters.IDs))
+		argIndex++
+	}
 
 	if filters.IsActive != nil {
 		query += ` AND u.is_active = $` + fmt.Sprintf("%d", argIndex)
