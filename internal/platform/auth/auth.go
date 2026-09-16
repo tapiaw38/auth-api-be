@@ -19,6 +19,7 @@ type (
 		UserID       string      `json:"user_id"`
 		TokenVersion uint        `json:"token_version"`
 		Roles        []RoleClaim `json:"roles"`
+		ReadOnly     bool        `json:"read_only,omitempty"`
 		jwt.StandardClaims
 	}
 )
