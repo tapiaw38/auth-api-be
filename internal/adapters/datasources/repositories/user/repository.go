@@ -41,6 +41,7 @@ type (
 		VerifiedEmail *bool
 		RoleID        string
 		RoleName      string
+		Search        string
 		CreatedAt     time.Time
 		Limit         int
 		Offset        int
