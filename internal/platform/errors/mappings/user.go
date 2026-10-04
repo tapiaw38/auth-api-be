@@ -351,4 +351,22 @@ var (
 		http.StatusBadRequest,
 		"password does not meet strength requirements",
 	}
+
+	UserRolesUpdateError = ErrorDetails{
+		"user:roles:update-error",
+		http.StatusInternalServerError,
+		"failed to update user roles",
+	}
+
+	UserRolesSelfUpdateError = ErrorDetails{
+		"user:roles:self-update",
+		http.StatusForbidden,
+		"you cannot change your own roles",
+	}
+
+	UserRolesNotAssignableError = ErrorDetails{
+		"user:roles:not-assignable",
+		http.StatusBadRequest,
+		"that role cannot be assigned from the panel",
+	}
 )

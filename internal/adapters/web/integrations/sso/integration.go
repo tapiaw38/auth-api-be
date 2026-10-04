@@ -11,7 +11,7 @@ import (
 
 type (
 	Integration interface {
-		ExchangeCode(context.Context, string) (*oauth2.Token, error)
+		ExchangeCode(context.Context, string, string) (*oauth2.Token, error)
 		GetUserInfo(context.Context, *oauth2.Token) (*SocialUser, error)
 	}
 
@@ -41,7 +41,6 @@ func initConfig(cfg *config.ConfigurationService) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     cfg.GCPConfig.OAuth2Config.GoogleClientID,
 		ClientSecret: cfg.GCPConfig.OAuth2Config.GoogleClientSecret,
-		RedirectURL:  "postmessage",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -53,8 +52,11 @@ func initConfig(cfg *config.ConfigurationService) *oauth2.Config {
 	}
 }
 
-func (i *integration) ExchangeCode(ctx context.Context, code string) (*oauth2.Token, error) {
-	token, err := i.config.Exchange(ctx, code)
+func (i *integration) ExchangeCode(ctx context.Context, code string, redirectURI string) (*oauth2.Token, error) {
+	config := *i.config
+	config.RedirectURL = redirectURI
+
+	token, err := config.Exchange(ctx, code)
 	if err != nil {
 		return nil, err
 	}

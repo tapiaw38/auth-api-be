@@ -18,6 +18,7 @@ type (
 		List(context.Context, ListFilterOptions) ([]*domain.User, apperrors.ApplicationError)
 		ChangePassword(ctx context.Context, id string, password string) apperrors.ApplicationError
 		InvalidatePasswordResetToken(ctx context.Context, id string) apperrors.ApplicationError
+		IncrementTokenVersion(ctx context.Context, id string) apperrors.ApplicationError
 	}
 
 	repository struct {
@@ -33,10 +34,14 @@ type (
 	}
 
 	ListFilterOptions struct {
+		// IDs filters by username — that's the identifier every other
+		// service stores as its own foreign "user_id" (see JWT user_id claim).
+		IDs           []string
 		IsActive      *bool
 		VerifiedEmail *bool
 		RoleID        string
 		RoleName      string
+		Search        string
 		CreatedAt     time.Time
 		Limit         int
 		Offset        int

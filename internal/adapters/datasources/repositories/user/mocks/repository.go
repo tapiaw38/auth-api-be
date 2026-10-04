@@ -101,6 +101,20 @@ func (mr *MockRepositoryMockRecorder) Get(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), arg0, arg1)
 }
 
+// IncrementTokenVersion mocks base method.
+func (m *MockRepository) IncrementTokenVersion(ctx context.Context, id string) errors.ApplicationError {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementTokenVersion", ctx, id)
+	ret0, _ := ret[0].(errors.ApplicationError)
+	return ret0
+}
+
+// IncrementTokenVersion indicates an expected call of IncrementTokenVersion.
+func (mr *MockRepositoryMockRecorder) IncrementTokenVersion(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementTokenVersion", reflect.TypeOf((*MockRepository)(nil).IncrementTokenVersion), ctx, id)
+}
+
 // InvalidatePasswordResetToken mocks base method.
 func (m *MockRepository) InvalidatePasswordResetToken(ctx context.Context, id string) errors.ApplicationError {
 	m.ctrl.T.Helper()
@@ -143,19 +157,4 @@ func (m *MockRepository) Patch(arg0 context.Context, arg1 string, arg2 *domain.U
 func (mr *MockRepositoryMockRecorder) Patch(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Patch", reflect.TypeOf((*MockRepository)(nil).Patch), arg0, arg1, arg2)
-}
-
-// Update mocks base method.
-func (m *MockRepository) Update(arg0 context.Context, arg1 string, arg2 *domain.User) (string, errors.ApplicationError) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", arg0, arg1, arg2)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(errors.ApplicationError)
-	return ret0, ret1
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockRepositoryMockRecorder) Update(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), arg0, arg1, arg2)
 }

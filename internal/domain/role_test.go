@@ -19,11 +19,11 @@ func TestCanManageUsers(t *testing.T) {
 			},
 			expected: true,
 		},
-		"admin can manage users": {
+		"admin cannot manage users": {
 			roles: []domain.Role{
 				{ID: "role-1", Name: domain.RoleAdmin},
 			},
-			expected: true,
+			expected: false,
 		},
 		"user cannot manage users": {
 			roles: []domain.Role{
@@ -31,10 +31,17 @@ func TestCanManageUsers(t *testing.T) {
 			},
 			expected: false,
 		},
-		"mixed roles including admin can manage users": {
+		"mixed roles without superadmin cannot manage users": {
 			roles: []domain.Role{
 				{ID: "role-1", Name: domain.RoleUser},
 				{ID: "role-2", Name: domain.RoleAdmin},
+			},
+			expected: false,
+		},
+		"mixed roles including superadmin can manage users": {
+			roles: []domain.Role{
+				{ID: "role-1", Name: domain.RoleUser},
+				{ID: "role-2", Name: domain.RoleSuperAdmin},
 			},
 			expected: true,
 		},
