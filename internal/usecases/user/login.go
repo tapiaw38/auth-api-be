@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	role_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/role"
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
+	"github.com/tapiaw38/auth-api-be/internal/adapters/web/integrations/sso"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	"github.com/tapiaw38/auth-api-be/internal/platform/appcontext"
 	"github.com/tapiaw38/auth-api-be/internal/platform/auth"
@@ -102,7 +103,7 @@ func (u *loginUsecase) Execute(ctx context.Context, input LoginInput) (*LoginOut
 }
 
 func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput) (*string, apperrors.ApplicationError) {
-	token, err := app.Integrations.SSO.ExchangeCode(ctx, input.Code)
+	token, err := app.Integrations.SSO.ExchangeCode(ctx, input.Code, "postmessage")
 	if err != nil {
 		return nil, apperrors.NewApplicationError(mappings.UserLoginGoogleExchangeError, err)
 	}
@@ -112,6 +113,10 @@ func googleLogin(ctx context.Context, app *appcontext.Context, input LoginInput)
 		return nil, apperrors.NewApplicationError(mappings.UserLoginGoogleUserInfoError, err)
 	}
 
+	return resolveGoogleUser(ctx, app, userInfo)
+}
+
+func resolveGoogleUser(ctx context.Context, app *appcontext.Context, userInfo *sso.SocialUser) (*string, apperrors.ApplicationError) {
 	user, appErr := app.Repositories.User.Get(ctx, user_repo.GetFilterOptions{
 		Email: userInfo.Email,
 	})

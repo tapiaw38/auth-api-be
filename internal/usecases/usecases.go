@@ -14,6 +14,7 @@ type Usecases struct {
 type User struct {
 	RegisterUsecase             user.RegisterUsecase
 	LoginUsecase                user.LoginUsecase
+	GoogleMobileLoginUsecase    user.GoogleMobileLoginUsecase
 	RefreshUsecase              user.RefreshUsecase
 	GetUsecase                  user.GetUsecase
 	UpdateUsecase               user.UpdateUsecase
@@ -40,6 +41,7 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 		User: User{
 			RegisterUsecase:             user.NewCreateUsecase(contextFactory),
 			LoginUsecase:                user.NewLoginUsecase(contextFactory),
+			GoogleMobileLoginUsecase:    user.NewGoogleMobileLoginUsecase(contextFactory),
 			RefreshUsecase:              user.NewRefreshUsecase(contextFactory),
 			GetUsecase:                  user.NewGetUsecase(contextFactory),
 			UpdateUsecase:               user.NewUpdateUsecase(contextFactory),
