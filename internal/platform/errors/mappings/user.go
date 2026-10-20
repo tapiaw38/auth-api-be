@@ -51,6 +51,12 @@ var (
 		"failed to retrieve user information from Google",
 	}
 
+	UserLoginGoogleInvalidIDTokenError = ErrorDetails{
+		"user:login:google-invalid-id-token",
+		http.StatusUnauthorized,
+		"invalid Google ID token",
+	}
+
 	// Register errors
 	UserRegisterInvalidInputError = ErrorDetails{
 		"user:register:invalid-input",

@@ -20,6 +20,7 @@ func RegisterApplicationRoutes(app *gin.Engine, useCases *usecases.Usecases) {
 
 	routeGroup.POST("auth/register", user.NewRegisterHandler(useCases.User.RegisterUsecase))
 	routeGroup.POST("auth/login", user.NewLoginHandler(useCases.User.LoginUsecase))
+	routeGroup.POST("auth/google/native", user.NewGoogleNativeLoginHandler(useCases.User.GoogleNativeLoginUsecase))
 	routeGroup.POST("auth/google/mobile/callback", user.NewGoogleMobileCallbackHandler(useCases.User.GoogleMobileLoginUsecase))
 	routeGroup.GET("auth/google/mobile/poll/:state", user.NewGoogleMobilePollHandler(useCases.User.GoogleMobileLoginUsecase))
 	routeGroup.POST("auth/refresh", user.NewRefreshHandler(useCases.User.RefreshUsecase))

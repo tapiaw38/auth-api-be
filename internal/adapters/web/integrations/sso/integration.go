@@ -5,6 +5,7 @@ import (
 
 	"github.com/tapiaw38/auth-api-be/internal/platform/config"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/idtoken"
 	googleauth "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 )
@@ -13,6 +14,7 @@ type (
 	Integration interface {
 		ExchangeCode(context.Context, string, string) (*oauth2.Token, error)
 		GetUserInfo(context.Context, *oauth2.Token) (*SocialUser, error)
+		VerifyIDToken(context.Context, string) (*SocialUser, error)
 	}
 
 	integration struct {
@@ -82,4 +84,29 @@ func (*integration) GetUserInfo(ctx context.Context, token *oauth2.Token) (*Soci
 		Picture:       userInfo.Picture,
 		VerifiedEmail: true,
 	}, nil
+}
+
+func (i *integration) VerifyIDToken(ctx context.Context, token string) (*SocialUser, error) {
+	payload, err := idtoken.Validate(ctx, token, i.config.ClientID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SocialUser{
+		Email:         stringClaim(payload.Claims, "email"),
+		FirstName:     stringClaim(payload.Claims, "given_name"),
+		LastName:      stringClaim(payload.Claims, "family_name"),
+		Picture:       stringClaim(payload.Claims, "picture"),
+		VerifiedEmail: boolClaim(payload.Claims, "email_verified"),
+	}, nil
+}
+
+func stringClaim(claims map[string]interface{}, name string) string {
+	value, _ := claims[name].(string)
+	return value
+}
+
+func boolClaim(claims map[string]interface{}, name string) bool {
+	value, _ := claims[name].(bool)
+	return value
 }
