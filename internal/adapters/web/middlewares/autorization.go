@@ -44,6 +44,11 @@ func AuthorizationMiddleware(usecase user.GetTokenVersionUsecase) gin.HandlerFun
 			return
 		}
 
+		if claims.ReadOnly && c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead && c.Request.Method != http.MethodOptions {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "impersonation session is read-only"})
+			return
+		}
+
 		ctx = context.WithValue(ctx, "userID", claims.UserID)
 		ctx = context.WithValue(ctx, "userRoles", claims.Roles)
 		c.Request = c.Request.WithContext(ctx)

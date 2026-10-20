@@ -67,5 +67,13 @@ func (u *setPasswordUsecase) Execute(ctx context.Context, input SetPasswordInput
 		return appErr
 	}
 
+	if appErr := app.Repositories.User.IncrementTokenVersion(ctx, user.ID); appErr != nil {
+		return appErr
+	}
+
+	if appErr := app.Repositories.RefreshToken.RevokeAllForUser(ctx, user.ID); appErr != nil {
+		return appErr
+	}
+
 	return nil
 }

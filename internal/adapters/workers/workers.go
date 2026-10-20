@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"sync"
 
 	"github.com/streadway/amqp"
@@ -30,6 +31,11 @@ type (
 		ch      *amqp.Channel
 		handler ConsumerHandler
 	}
+)
+
+const (
+	maxRetries    = 5
+	retryCountKey = "x-retry-count"
 )
 
 func NewConsumerManager(conn *amqp.Connection) *ConsumerManager {
@@ -111,42 +117,97 @@ func (cm *ConsumerManager) Consume(ctx context.Context, topic queue.Topic) error
 				log.Println("Message channel closed")
 				return nil
 			}
-			log.Printf("Received message: %s", string(d.Body))
+			log.Printf("Received message on topic %s (%d bytes)", cons.topic, len(d.Body))
 			func() {
-				ackMessage := false
-				requeueMessage := false
+				handled := false
 
 				defer func() {
 					if r := recover(); r != nil {
 						log.Printf("Recovered in message handler: %v", r)
-						requeueMessage = true
 					}
-
-					if ackMessage {
-						if err := d.Ack(false); err != nil {
-							log.Printf("Failed to ack message: %v", err)
-						}
-						return
-					}
-
-					if err := d.Nack(false, requeueMessage); err != nil {
-						log.Printf("Failed to nack message: %v", err)
+					if !handled {
+						retryOrDrop(cons, d, true)
 					}
 				}()
 
 				if err := cons.handler(d.Body); err != nil {
 					log.Printf("Error handling message: %v", err)
-					requeueMessage = shouldRequeue(err)
+					handled = true
+					retryOrDrop(cons, d, shouldRequeue(err))
 					return
 				}
 
-				ackMessage = true
+				handled = true
+				if err := d.Ack(false); err != nil {
+					log.Printf("Failed to ack message: %v", err)
+				}
 			}()
 		case <-ctx.Done():
 			log.Println("Consumer context cancelled")
 			return nil
 		}
 	}
+}
+
+func retryOrDrop(cons *consumer, d amqp.Delivery, retryable bool) {
+	if !retryable {
+		if err := d.Nack(false, false); err != nil {
+			log.Printf("Failed to nack message: %v", err)
+		}
+		return
+	}
+
+	retries := getRetryCount(d.Headers)
+	if retries >= maxRetries {
+		log.Printf("Message on topic %s exceeded max retries (%d), dropping", cons.topic, maxRetries)
+		if err := d.Nack(false, false); err != nil {
+			log.Printf("Failed to nack message: %v", err)
+		}
+		return
+	}
+
+	headers := amqp.Table{}
+	maps.Copy(headers, d.Headers)
+	headers[retryCountKey] = retries + 1
+
+	err := cons.ch.Publish(
+		"",
+		string(cons.topic),
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  d.ContentType,
+			DeliveryMode: amqp.Persistent,
+			Headers:      headers,
+			Body:         d.Body,
+		},
+	)
+	if err != nil {
+		log.Printf("Failed to republish message for retry: %v", err)
+		if nackErr := d.Nack(false, true); nackErr != nil {
+			log.Printf("Failed to nack message: %v", nackErr)
+		}
+		return
+	}
+
+	if err := d.Ack(false); err != nil {
+		log.Printf("Failed to ack message: %v", err)
+	}
+}
+
+func getRetryCount(headers amqp.Table) int32 {
+	if headers == nil {
+		return 0
+	}
+	switch n := headers[retryCountKey].(type) {
+	case int32:
+		return n
+	case int64:
+		return int32(n)
+	case int:
+		return int32(n)
+	}
+	return 0
 }
 
 func RegisterWorkers(ctx context.Context, mq *queue.RabbitMQ, contextFactory appcontext.Factory) error {

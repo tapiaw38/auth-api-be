@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
 	apperrors "github.com/tapiaw38/auth-api-be/internal/platform/errors"
 	"github.com/tapiaw38/auth-api-be/internal/platform/errors/mappings"
@@ -131,6 +133,12 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 	argIndex := 1
 	var args []any
 
+	if len(filters.IDs) > 0 {
+		query += ` AND u.username = ANY($` + fmt.Sprintf("%d", argIndex) + `)`
+		args = append(args, pq.Array(filters.IDs))
+		argIndex++
+	}
+
 	if filters.IsActive != nil {
 		query += ` AND u.is_active = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, *filters.IsActive)
@@ -155,6 +163,18 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 		argIndex++
 	}
 
+	if search := strings.TrimSpace(filters.Search); search != "" {
+		query += ` AND (
+			u.username ILIKE $` + fmt.Sprintf("%d", argIndex) + `
+			OR u.email ILIKE $` + fmt.Sprintf("%d", argIndex) + `
+			OR u.first_name ILIKE $` + fmt.Sprintf("%d", argIndex) + `
+			OR u.last_name ILIKE $` + fmt.Sprintf("%d", argIndex) + `
+			OR concat_ws(' ', u.first_name, u.last_name) ILIKE $` + fmt.Sprintf("%d", argIndex) + `
+		)`
+		args = append(args, "%"+search+"%")
+		argIndex++
+	}
+
 	if !filters.CreatedAt.IsZero() {
 		query += ` AND u.created_at = $` + fmt.Sprintf("%d", argIndex)
 		args = append(args, filters.CreatedAt)
@@ -170,6 +190,8 @@ func (r *repository) executeListQuery(ctx context.Context, filters ListFilterOpt
 		u.password_reset_token, u.password_reset_token_expiry,
 		u.token_version, u.auth_method,
 		u.created_at, u.updated_at`
+
+	query += ` ORDER BY lower(u.first_name), lower(u.last_name), lower(u.email), u.id`
 
 	if filters.Limit > 0 {
 		query += ` LIMIT $` + fmt.Sprintf("%d", argIndex)

@@ -51,6 +51,12 @@ var (
 		"failed to retrieve user information from Google",
 	}
 
+	UserLoginGoogleInvalidIDTokenError = ErrorDetails{
+		"user:login:google-invalid-id-token",
+		http.StatusUnauthorized,
+		"invalid Google ID token",
+	}
+
 	// Register errors
 	UserRegisterInvalidInputError = ErrorDetails{
 		"user:register:invalid-input",
@@ -350,5 +356,23 @@ var (
 		"user:set-password:weak-password",
 		http.StatusBadRequest,
 		"password does not meet strength requirements",
+	}
+
+	UserRolesUpdateError = ErrorDetails{
+		"user:roles:update-error",
+		http.StatusInternalServerError,
+		"failed to update user roles",
+	}
+
+	UserRolesSelfUpdateError = ErrorDetails{
+		"user:roles:self-update",
+		http.StatusForbidden,
+		"you cannot change your own roles",
+	}
+
+	UserRolesNotAssignableError = ErrorDetails{
+		"user:roles:not-assignable",
+		http.StatusBadRequest,
+		"that role cannot be assigned from the panel",
 	}
 )

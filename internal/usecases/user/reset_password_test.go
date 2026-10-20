@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories"
+	mock_refresh "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/refresh_token/mocks"
 	user_repo "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user"
 	mock_user "github.com/tapiaw38/auth-api-be/internal/adapters/datasources/repositories/user/mocks"
 	"github.com/tapiaw38/auth-api-be/internal/domain"
@@ -20,7 +21,8 @@ import (
 
 func TestResetPasswordUsecase(t *testing.T) {
 	type fields struct {
-		repository *mock_user.MockRepository
+		repository    *mock_user.MockRepository
+		refreshTokens *mock_refresh.MockRepository
 	}
 
 	now := time.Now()
@@ -48,6 +50,8 @@ func TestResetPasswordUsecase(t *testing.T) {
 				f.repository.EXPECT().Get(gomock.Any(), user_repo.GetFilterOptions{PasswordResetToken: "valid-token"}).Return(user, nil)
 				f.repository.EXPECT().Patch(gomock.Any(), "user-123", gomock.Any()).Return("user-123", nil)
 				f.repository.EXPECT().InvalidatePasswordResetToken(gomock.Any(), "user-123").Return(nil)
+				f.repository.EXPECT().IncrementTokenVersion(gomock.Any(), "user-123").Return(nil)
+				f.refreshTokens.EXPECT().RevokeAllForUser(gomock.Any(), "user-123").Return(nil)
 			},
 			expectedErr: nil,
 		},
@@ -121,7 +125,8 @@ func TestResetPasswordUsecase(t *testing.T) {
 			defer ctrl.Finish()
 
 			f := fields{
-				repository: mock_user.NewMockRepository(ctrl),
+				repository:    mock_user.NewMockRepository(ctrl),
+				refreshTokens: mock_refresh.NewMockRepository(ctrl),
 			}
 
 			if tc.prepare != nil {
@@ -131,7 +136,8 @@ func TestResetPasswordUsecase(t *testing.T) {
 			contextFactory := func(opts ...appcontext.Option) *appcontext.Context {
 				return &appcontext.Context{
 					Repositories: &repositories.Repositories{
-						User: f.repository,
+						User:         f.repository,
+						RefreshToken: f.refreshTokens,
 					},
 				}
 			}

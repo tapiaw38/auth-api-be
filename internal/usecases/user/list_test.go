@@ -179,6 +179,19 @@ func TestListUsecase(t *testing.T) {
 				assert.Equal(t, "role-123", result[0].Roles[0].ID)
 			},
 		},
+		"successful list - forwards identity search": {
+			filters: usecase.ListFilterOptions{
+				Search: "ana@example.com",
+				Limit:  8,
+			},
+			prepare: func(f *fields) {
+				f.repository.EXPECT().List(gomock.Any(), user_repo.ListFilterOptions{
+					Search: "ana@example.com",
+					Limit:  8,
+				}).Return([]*domain.User{}, nil)
+			},
+			expectedLen: 0,
+		},
 		"successful list - empty result": {
 			filters: usecase.ListFilterOptions{
 				Limit:  10,

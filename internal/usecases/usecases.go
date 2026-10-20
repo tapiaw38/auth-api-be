@@ -14,16 +14,22 @@ type Usecases struct {
 type User struct {
 	RegisterUsecase             user.RegisterUsecase
 	LoginUsecase                user.LoginUsecase
+	GoogleNativeLoginUsecase    user.GoogleNativeLoginUsecase
+	GoogleMobileLoginUsecase    user.GoogleMobileLoginUsecase
+	RefreshUsecase              user.RefreshUsecase
 	GetUsecase                  user.GetUsecase
 	UpdateUsecase               user.UpdateUsecase
 	DeleteUsecase               user.DeleteUsecase
 	ListUsecase                 user.ListUsecase
+	BatchUsecase                user.BatchUsecase
+	FindByEmailUsecase          user.FindByEmailUsecase
 	GetTokenVersionUsecase      user.GetTokenVersionUsecase
 	VerifyEmailUsecase          user.VerifyEmailUsecase
 	ResetPasswordUsecase        user.ResetPasswordUsecase
 	RequestResetPasswordUsecase user.RequestResetPasswordUsecase
 	ChangePasswordUsecase       user.ChangePasswordUsecase
 	SetPasswordUsecase          user.SetPasswordUsecase
+	UpdateRolesUsecase          user.UpdateRolesUsecase
 }
 
 type Role struct {
@@ -36,16 +42,22 @@ func CreateUsecases(contextFactory appcontext.Factory) *Usecases {
 		User: User{
 			RegisterUsecase:             user.NewCreateUsecase(contextFactory),
 			LoginUsecase:                user.NewLoginUsecase(contextFactory),
+			GoogleNativeLoginUsecase:    user.NewGoogleNativeLoginUsecase(contextFactory),
+			GoogleMobileLoginUsecase:    user.NewGoogleMobileLoginUsecase(contextFactory),
+			RefreshUsecase:              user.NewRefreshUsecase(contextFactory),
 			GetUsecase:                  user.NewGetUsecase(contextFactory),
 			UpdateUsecase:               user.NewUpdateUsecase(contextFactory),
 			DeleteUsecase:               user.NewDeleteUsecase(contextFactory),
 			ListUsecase:                 user.NewListUsecase(contextFactory),
+			BatchUsecase:                user.NewBatchUsecase(contextFactory),
+			FindByEmailUsecase:          user.NewFindByEmailUsecase(contextFactory),
 			GetTokenVersionUsecase:      user.NewGetTokenVersionUsecase(contextFactory),
 			VerifyEmailUsecase:          user.NewVerifyEmailUsecase(contextFactory),
 			ResetPasswordUsecase:        user.NewResetPasswordUsecase(contextFactory),
 			RequestResetPasswordUsecase: user.NewRequestResetPasswordUsecase(contextFactory),
 			ChangePasswordUsecase:       user.NewChangePasswordUsecase(contextFactory),
 			SetPasswordUsecase:          user.NewSetPasswordUsecase(contextFactory),
+			UpdateRolesUsecase:          user.NewUpdateRolesUsecase(contextFactory),
 		},
 		Role: Role{
 			EnsureUsecase: role.NewEnsureUseCase(contextFactory),
